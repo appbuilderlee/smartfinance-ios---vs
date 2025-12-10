@@ -1,0 +1,313 @@
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Camera, X, Tag } from 'lucide-react';
+import { useData } from '../contexts/DataContext';
+import { Icon } from '../components/Icon';
+import NumPad from '../components/NumPad';
+import { getCurrencySymbol } from '../utils/currency';
+import { TransactionType } from '../types';
+
+const AddTransaction: React.FC = () => {
+  const navigate = useNavigate();
+  const { addTransaction, categories, currency } = useData();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State for NumPad visibility
+  const [isNumPadOpen, setIsNumPadOpen] = useState(false);
+
+  // Fix date initialization to account for local timezone
+  const getTodayString = () => {
+    const today = new Date();
+    const local = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
+    return local.toISOString().split('T')[0];
+  };
+
+  const [amount, setAmount] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [date, setDate] = useState(getTodayString());
+  const [recurrence, setRecurrence] = useState<'none' | 'weekly' | 'biweekly' | 'monthly'>('none');
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [transactionType, setTransactionType] = useState<TransactionType>(TransactionType.EXPENSE);
+
+  const handleSave = () => {
+    if (!amount || !selectedCategory) {
+      alert("請輸入金額並選擇分類");
+      return;
+    }
+
+    const localDate = new Date(date + 'T00:00:00');
+
+    addTransaction({
+      amount: parseFloat(amount),
+      categoryId: selectedCategory,
+      note: note,
+      date: localDate.toISOString(),
+      type: transactionType,
+      isRecurring: recurrence !== 'none',
+      receiptUrl: receiptPreview || undefined,
+      tags: tags
+    });
+
+    navigate('/records');
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      setTags([...tags, tagInput.trim()]);
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col pt-safe-top pb-safe-bottom">
+      {/* Header */}
+      <div className="px-4 py-3 flex justify-between items-center bg-background z-10">
+        <button onClick={() => navigate(-1)} className="text-primary text-base">取消</button>
+        <h2 className="text-lg font-semibold text-white">新增帳目</h2>
+        <div className="w-14" />
+      </div>
+
+      <div className="p-4 space-y-6 flex-1 overflow-y-auto scrollbar-hide pb-40">
+        {/* Transaction Type Toggle */}
+        <div className="flex bg-surface rounded-xl p-1">
+          <button
+            onClick={() => setTransactionType(TransactionType.EXPENSE)}
+            className={`flex-1 py-2 rounded-lg text-sm transition-all duration-200 ${transactionType === TransactionType.EXPENSE ? 'bg-red-500 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'
+              }`}
+          >
+            支出
+          </button>
+          <button
+            onClick={() => setTransactionType(TransactionType.INCOME)}
+            className={`flex-1 py-2 rounded-lg text-sm transition-all duration-200 ${transactionType === TransactionType.INCOME ? 'bg-green-500 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'
+              }`}
+          >
+            收入
+          </button>
+        </div>
+
+
+        {/* Amount Display */}
+        <div 
+          onClick={() => setIsNumPadOpen(true)}
+          className={`rounded-2xl py-8 px-4 flex flex-col items-center justify-center mb-4 transition-colors duration-300 cursor-pointer ${transactionType === TransactionType.INCOME ? 'bg-green-500/10 border border-green-500/20' : 'bg-surface border border-white/5'
+          }`}>
+          <div className="flex items-baseline text-white">
+            <span className="text-3xl mr-2 text-gray-400">{getCurrencySymbol(currency)}</span>
+            <span className={`text-6xl font-light tracking-tight ${!amount || amount === '0' ? 'text-gray-600' : 'text-white'}`}>
+              {amount || '0'}
+            </span>
+          </div>
+        </div>
+
+        {/* Categories Grid */}
+        <div>
+          <h3 className="text-gray-400 text-sm mb-3 ml-1">
+            {transactionType === TransactionType.EXPENSE ? '支出分類' : '收入分類'}
+          </h3>
+          <div className="grid grid-cols-5 gap-4">
+            {categories.filter(c => c.type === transactionType).map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className="flex flex-col items-center gap-2 group"
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${selectedCategory === cat.id ? cat.color + ' text-white scale-110 shadow-lg ring-2 ring-white/20' : 'bg-surface text-gray-400 group-active:scale-95'
+                  }`}>
+                  {cat.icon.startsWith('emoji:')
+                    ? <span className="text-lg">{cat.icon.replace('emoji:', '')}</span>
+                    : <Icon name={cat.icon} size={20} />}
+                </div>
+                <span className={`text-[10px] transition-colors ${selectedCategory === cat.id ? 'text-white' : 'text-gray-500'}`}>{cat.name}</span>
+              </button>
+            ))}
+            {/* Add New Category Button */}
+            <button onClick={() => navigate('/categories')} className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-full bg-surface text-blue-500 flex items-center justify-center active:scale-95 transition-transform">
+                <Plus size={24} />
+              </div>
+              <span className="text-[10px] text-gray-500">新增</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Note, Tags & Receipt */}
+        <div>
+          <h3 className="text-gray-400 text-sm mb-2 ml-1">詳細資訊</h3>
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="輸入備註..."
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              className="w-full bg-surface rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+            />
+
+            {/* Tags Input */}
+            <div className="w-full bg-surface rounded-xl p-3 flex flex-wrap items-center gap-2 min-h-[56px]">
+              <Tag size={18} className="text-gray-500 mr-1" />
+              {tags.map(tag => (
+                <span key={tag} className="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  {tag}
+                  <button onClick={() => removeTag(tag)} className="hover:text-white"><X size={12} /></button>
+                </span>
+              ))}
+              <input
+                type="text"
+                placeholder={tags.length === 0 ? "新增標籤..." : ""}
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addTag(); }}
+                onBlur={addTag}
+                className="bg-transparent text-white text-sm focus:outline-none flex-1 min-w-[80px]"
+              />
+            </div>
+
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+
+            {!receiptPreview ? (
+              <button
+                onClick={triggerFileInput}
+                className="w-full bg-surface rounded-xl p-4 flex items-center gap-3 transition-colors hover:bg-surface/80 active:bg-surface/60"
+              >
+                <div className="bg-gray-700 p-2 rounded-full">
+                  <Camera size={18} className="text-white" />
+                </div>
+                <span className="text-gray-400">拍攝收據或上傳照片</span>
+              </button>
+            ) : (
+              <div className="relative w-full bg-surface rounded-xl p-2">
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-black/50">
+                  <img src={receiptPreview} alt="Receipt Preview" className="w-full h-full object-contain" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setReceiptPreview(null); }}
+                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <button onClick={triggerFileInput} className="w-full py-2 text-sm text-primary mt-1">
+                  更換照片
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Date & Recurrence */}
+        <div className="grid grid-cols-1 gap-3">
+          <div>
+            <h3 className="text-gray-400 text-sm mb-2 ml-1">日期</h3>
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="w-full bg-surface rounded-xl p-4 text-white focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <h3 className="text-gray-400 text-sm mb-2 ml-1">週期</h3>
+            <div className="flex bg-surface rounded-xl p-1">
+              {['無', '每週', '每2週', '每月'].map((label, idx) => {
+                const value = ['none', 'weekly', 'biweekly', 'monthly'][idx] as any;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => setRecurrence(value)}
+                    className={`flex-1 py-2 rounded-lg text-sm transition-all duration-200 ${recurrence === value ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-gray-200'
+                      }`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="h-32"></div> {/* Spacer for fixed save button & NumPad */}
+      </div>
+
+      {/* Fixed bottom save */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-gray-800 px-4 pb-safe-bottom pt-3">
+        <button
+          onClick={handleSave}
+          className="w-full bg-primary text-white font-semibold py-4 rounded-2xl text-base shadow-lg shadow-primary/30 active:scale-[0.99] transition-transform"
+        >
+          儲存
+        </button>
+      </div>
+
+      {/* Numeric Keypad - Modal */}
+      {isNumPadOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/60" 
+          onClick={() => setIsNumPadOpen(false)}
+        >
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-50"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on the pad itself
+          >
+            <NumPad
+              onNumber={(num) => {
+                if (num === '.') {
+                  if (!amount.includes('.')) setAmount(amount + '.');
+                } else if (amount === '0') {
+                  setAmount(num);
+                } else {
+                  // Limit to 2 decimal places
+                  const parts = amount.split('.');
+                  if (parts.length === 2 && parts[1].length >= 2) return;
+                  setAmount(amount + num);
+                }
+              }}
+              onDelete={() => {
+                if (amount.length > 1) {
+                  setAmount(amount.slice(0, -1));
+                } else {
+                  setAmount('0');
+                }
+              }}
+              onClear={() => setAmount('0')}
+              onDone={() => {
+                setIsNumPadOpen(false);
+                // Optional: Automatically scroll to the next logical field after amount entry
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AddTransaction;

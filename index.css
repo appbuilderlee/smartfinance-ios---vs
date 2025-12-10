@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme color CSS variables - defaults to blue */
+:root {
+  --color-primary: #3b82f6;
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #ffffff;
+}
+
+/* iOS26 Theme - Glassmorphism */
+.theme-ios26 .bg-surface {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-ios26 .bg-background {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%) !important;
+}
+
+/* Light Theme */
+.theme-light {
+  color-scheme: light;
+}
+
+.theme-light .bg-background {
+  background: var(--color-bg) !important;
+}
+
+.theme-light .bg-surface {
+  background: var(--color-surface) !important;
+}
+
+.theme-light .text-white {
+  color: var(--color-text) !important;
+}
+
+/* Custom scrollbar hiding for clean UI */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Disable pull-to-refresh on mobile to feel like native app */
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Base styles */
+body {
+  @apply bg-background text-white antialiased select-none touch-pan-y;
+  /* Remove gray highlight on tap in iOS */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent auto-zoom on iOS inputs by ensuring font-size is at least 16px */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* Allow text selection in inputs even when body is select-none */
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
