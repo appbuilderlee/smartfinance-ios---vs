@@ -41,3 +41,16 @@ App Store 風格介紹
 主要功能：快速記帳、訂閱週期入帳、分類/預算、信用卡回贈/年費、KPI/趨勢/Top5 圖表、CSV/JSON/Firebase 備份。
 使用場景：日常記帳、月底對賬、訂閱扣款提醒、預算超標警示、換機/多裝置同步。
 Tagline：SmartFinance——少煩惱，多掌握，收支一目了然。
+
+專案技術棧
+React 19.2.1 + TypeScript
+
+Firebase 10.12.0（Auth + Firestore + Storage）
+
+React Router Dom 6.26.2
+
+Recharts 2.12.7（圖表）
+
+Tailwind CSS 3.4.3
+
+Lucide React 圖示
