@@ -17,6 +17,13 @@ type Config = {
 export function register(config?: Config) {
   // Vite uses import.meta.env.PROD to check for production build
   if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    // Avoid Go Live / localhost white-screen issues caused by stale SW caches.
+    // Enable locally only when explicitly requested.
+    const enableOnLocalhost = import.meta.env.VITE_ENABLE_SW === 'true';
+    if (isLocalhost && !enableOnLocalhost) {
+      return;
+    }
+
     // The URL constructor is available in all browsers that support SW.
     const publicUrl = new URL(import.meta.env.BASE_URL, window.location.href);
     if (publicUrl.origin !== window.location.origin) {

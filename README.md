@@ -35,6 +35,7 @@ flowchart LR
   D --> E[展示: KPI/圖表/日曆/Top5]
   E --> F[備份/匯出: CSV/JSON/Firebase]
   F --> B
+```
 App Store 風格介紹
 產品賣點：一站式記帳 + 訂閱自動入帳 + 預算提醒 + 信用卡管理 + 雲端備份。
 為咩人而設：想掌握日常收支、管理訂閱扣款、控預算、保留備份的用戶。
@@ -54,3 +55,12 @@ Recharts 2.12.7（圖表）
 Tailwind CSS 3.4.3
 
 Lucide React 圖示
+
+## 開發 / 預覽
+- 開發（建議，不會白畫面）：`npm run dev`
+- 產出可用的靜態檔：`npm run build`
+- 預覽 build 結果：`npm run preview`
+- VSCode「Go Live / Live Server」：
+  - 先 `npm run build`
+  - 本專案已內建 `.vscode/settings.json`，Go Live 會直接以 `dist/` 為網站根目錄（避免打開原始 `index.html` 造成白畫面）
+  - 若你之前已經註冊過舊版 Service Worker，請先在瀏覽器 DevTools → Application → Service Workers `Unregister` / `Clear site data`

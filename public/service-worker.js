@@ -1,8 +1,10 @@
 const CACHE_NAME = 'smartfinance-v1';
+const scope = self.registration.scope; // e.g. https://host/app/ or https://host/dist/
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  `${scope}index.html`,
+  `${scope}manifest.json`,
+  `${scope}icon-192.png`,
+  `${scope}icon-512.png`,
 ];
 
 // Install SW and cache static assets
