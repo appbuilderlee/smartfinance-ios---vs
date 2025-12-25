@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
-import { TransactionType } from '../types';
+import { Currency, TransactionType } from '../types';
 import { getCurrencySymbol } from '../utils/currency';
 import { Icon } from '../components/Icon';
 
@@ -31,6 +31,8 @@ const Calendar: React.FC = () => {
 
         transactions.forEach(tx => {
             const txDate = new Date(tx.date);
+            const txCurrency = (tx.currency as Currency) || currency;
+            if (txCurrency !== currency) return;
             if (txDate.getFullYear() === year && txDate.getMonth() === month) {
                 const day = txDate.getDate();
                 if (!totals[day]) {
@@ -45,13 +47,15 @@ const Calendar: React.FC = () => {
         });
 
         return totals;
-    }, [transactions, year, month]);
+    }, [transactions, year, month, currency]);
 
     // Monthly totals
     const monthlyTotals = useMemo(() => {
         return transactions.reduce(
             (acc, tx) => {
                 const txDate = new Date(tx.date);
+                const txCurrency = (tx.currency as Currency) || currency;
+                if (txCurrency !== currency) return acc;
                 if (txDate.getFullYear() === year && txDate.getMonth() === month) {
                     if (tx.type === TransactionType.EXPENSE) {
                         acc.expense += tx.amount;
@@ -63,31 +67,43 @@ const Calendar: React.FC = () => {
             },
             { income: 0, expense: 0 }
         );
-    }, [transactions, year, month]);
+    }, [transactions, year, month, currency]);
 
     // Monthly transactions (all transactions for the month)
     const monthlyTransactions = useMemo(() => {
         return transactions
             .filter(tx => {
                 const txDate = new Date(tx.date);
+                const txCurrency = (tx.currency as Currency) || currency;
+                if (txCurrency !== currency) return false;
                 return txDate.getFullYear() === year && txDate.getMonth() === month;
             })
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [transactions, year, month]);
+    }, [transactions, year, month, currency]);
 
     // Transactions for selected day
     const selectedDayTransactions = useMemo(() => {
         if (selectedDay === null) return [];
         return transactions.filter(tx => {
             const txDate = new Date(tx.date);
+            const txCurrency = (tx.currency as Currency) || currency;
+            if (txCurrency !== currency) return false;
             return txDate.getFullYear() === year &&
                 txDate.getMonth() === month &&
                 txDate.getDate() === selectedDay;
         });
-    }, [transactions, year, month, selectedDay]);
+    }, [transactions, year, month, selectedDay, currency]);
 
     // Display transactions based on selection
     const displayTransactions = selectedDay !== null ? selectedDayTransactions : monthlyTransactions;
+    const hasOtherCurrenciesThisMonth = useMemo(() => {
+        return transactions.some(tx => {
+            const txDate = new Date(tx.date);
+            if (txDate.getFullYear() !== year || txDate.getMonth() !== month) return false;
+            const txCurrency = (tx.currency as Currency) || currency;
+            return txCurrency !== currency;
+        });
+    }, [transactions, year, month, currency]);
 
     const prevMonth = () => {
         setCurrentDate(new Date(year, month - 1, 1));
@@ -157,7 +173,7 @@ const Calendar: React.FC = () => {
     return (
         <div className="min-h-screen bg-background pb-24 pt-safe-top">
             {/* Header */}
-            <div className="px-4 py-3 flex justify-between items-center bg-surface sticky top-0 z-50">
+            <div className="px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
                 <button onClick={prevMonth} className="p-2 text-primary">
                     <ChevronLeft size={24} />
                 </button>
@@ -165,7 +181,7 @@ const Calendar: React.FC = () => {
                     <select
                         value={year}
                         onChange={(e) => { setCurrentDate(new Date(Number(e.target.value), month, 1)); setSelectedDay(null); }}
-                        className="bg-background text-white text-sm rounded-lg px-3 py-1 flex-1"
+                        className="sf-control text-white text-sm rounded-lg px-3 py-1 flex-1"
                     >
                         {yearsWindow.map(y => (
                             <option key={y} value={y}>{y} 年</option>
@@ -174,7 +190,7 @@ const Calendar: React.FC = () => {
                     <select
                         value={month}
                         onChange={(e) => { setCurrentDate(new Date(year, Number(e.target.value), 1)); setSelectedDay(null); }}
-                        className="bg-background text-white text-sm rounded-lg px-3 py-1 flex-1"
+                        className="sf-control text-white text-sm rounded-lg px-3 py-1 flex-1"
                     >
                         {monthsList.map(m => (
                             <option key={m} value={m}>{m + 1} 月</option>
@@ -208,7 +224,12 @@ const Calendar: React.FC = () => {
 
             {/* Monthly Summary */}
             <div className="px-4 mb-4">
-                <div className="bg-surface rounded-2xl p-4">
+                {hasOtherCurrenciesThisMonth && (
+                    <div className="sf-panel p-3 text-xs text-gray-300 mb-3">
+                        本頁統計以 {currency} 計算，已排除其他幣別交易。
+                    </div>
+                )}
+                <div className="sf-panel p-4">
                     <h3 className="text-sm text-gray-400 mb-3">本月摘要</h3>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -229,7 +250,7 @@ const Calendar: React.FC = () => {
 
             {/* Transaction Details */}
             <div className="px-4">
-                <div className="bg-surface rounded-2xl p-4">
+                <div className="sf-panel p-4">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm text-gray-400">
                             {selectedDay !== null

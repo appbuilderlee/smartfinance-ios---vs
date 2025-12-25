@@ -3,8 +3,10 @@ import React, { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { AlertTriangle, TrendingDown, TrendingUp } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
-import { TransactionType } from '../types';
+import { Currency, TransactionType } from '../types';
 import { getCurrencySymbol } from '../utils/currency';
+
+type PeriodMode = 'month' | 'year';
 
 const Dashboard: React.FC = () => {
   const { transactions, categories, budgets, currency } = useData();
@@ -13,6 +15,18 @@ const Dashboard: React.FC = () => {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('month');
+
+  const availableCurrencies = useMemo(() => {
+    const set = new Set<Currency>();
+    set.add(currency);
+    transactions.forEach((t) => {
+      const txCurrency = (t.currency as Currency) || currency;
+      set.add(txCurrency);
+    });
+    return Array.from(set);
+  }, [transactions, currency]);
 
   const yearsOptions = useMemo(() => {
     const yearsSet = new Set<number>();
@@ -21,26 +35,33 @@ const Dashboard: React.FC = () => {
     return Array.from(yearsSet).sort((a, b) => b - a);
   }, [transactions, now]);
 
-  // 1. Calculate Monthly Totals
-  const monthlyStats = useMemo(() => {
+  const periodStats = useMemo(() => {
     let income = 0;
     let expense = 0;
     transactions.forEach(t => {
       const d = new Date(t.date);
-      if (d.getMonth() === selectedMonth && d.getFullYear() === selectedYear) {
-        if (t.type === TransactionType.INCOME) income += t.amount;
-        else expense += t.amount;
-      }
+      const txCurrency = (t.currency as Currency) || currency;
+      if (txCurrency !== selectedCurrency) return;
+
+      if (d.getFullYear() !== selectedYear) return;
+      if (periodMode === 'month' && d.getMonth() !== selectedMonth) return;
+
+      if (t.type === TransactionType.INCOME) income += t.amount;
+      else expense += t.amount;
     });
     return { income, expense };
-  }, [transactions, selectedMonth, selectedYear]);
+  }, [transactions, selectedMonth, selectedYear, currency, selectedCurrency, periodMode]);
 
   // 2. Calculate Pie Data (Expenses by Category)
   const pieData = useMemo(() => {
     const map = new Map<string, number>();
     transactions.forEach(t => {
       const d = new Date(t.date);
-      if (d.getMonth() === selectedMonth && d.getFullYear() === selectedYear && t.type === TransactionType.EXPENSE) {
+      const txCurrency = (t.currency as Currency) || currency;
+      if (txCurrency !== selectedCurrency) return;
+      if (d.getFullYear() !== selectedYear) return;
+      if (periodMode === 'month' && d.getMonth() !== selectedMonth) return;
+      if (t.type === TransactionType.EXPENSE) {
         const current = map.get(t.categoryId) || 0;
         map.set(t.categoryId, current + t.amount);
       }
@@ -54,7 +75,7 @@ const Dashboard: React.FC = () => {
         color: cat?.color.replace('bg-', 'text-').replace('text-', '#') || '#8884d8' // Hacky color mapping for demo
       };
     }).sort((a, b) => b.value - a.value).slice(0, 5); // Top 5
-  }, [transactions, categories, selectedMonth, selectedYear]);
+  }, [transactions, categories, selectedMonth, selectedYear, currency, selectedCurrency, periodMode]);
 
   // Helper to map Tailwind colors to Hex for Recharts
   const getColorHex = (tailwindClass: string) => {
@@ -77,13 +98,15 @@ const Dashboard: React.FC = () => {
     return { ...p, color: getColorHex(cat?.color || '') };
   });
 
-  // 3. Trend Data (Last 6 months)
+  // 3. Trend Data
   const trendData = useMemo(() => {
-    const data = [];
-    for (let i = 5; i >= 0; i--) {
+    const data: Array<{ month: string; income: number; expense: number }> = [];
+    const points = periodMode === 'year' ? 12 : 6;
+
+    for (let i = points - 1; i >= 0; i--) {
       const d = new Date();
       d.setFullYear(selectedYear);
-      d.setMonth(selectedMonth - i);
+      d.setMonth(periodMode === 'year' ? i : selectedMonth - i);
       const monthLabel = `${d.getMonth() + 1}月`;
 
       let inc = 0;
@@ -91,6 +114,8 @@ const Dashboard: React.FC = () => {
 
       transactions.forEach(t => {
         const tDate = new Date(t.date);
+        const txCurrency = (t.currency as Currency) || currency;
+        if (txCurrency !== selectedCurrency) return;
         if (tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear()) {
           if (t.type === TransactionType.INCOME) inc += t.amount;
           else exp += t.amount;
@@ -99,40 +124,86 @@ const Dashboard: React.FC = () => {
       data.push({ month: monthLabel, income: inc, expense: exp });
     }
     return data;
-  }, [transactions, selectedMonth, selectedYear]);
+  }, [transactions, selectedMonth, selectedYear, currency, selectedCurrency, periodMode]);
 
   // Check budget status
   const totalBudget = budgets.reduce((acc, b) => acc + b.limit, 0);
-  const isOverBudget = monthlyStats.expense > totalBudget && totalBudget > 0;
+  const isOverBudget = periodMode === 'month' && selectedCurrency === currency && periodStats.expense > totalBudget && totalBudget > 0;
+  const hasOtherCurrenciesInPeriod = useMemo(() => {
+    return transactions.some((t) => {
+      const d = new Date(t.date);
+      if (d.getFullYear() !== selectedYear) return false;
+      if (periodMode === 'month' && d.getMonth() !== selectedMonth) return false;
+      const txCurrency = (t.currency as Currency) || currency;
+      return txCurrency !== selectedCurrency;
+    });
+  }, [transactions, selectedMonth, selectedYear, currency, selectedCurrency, periodMode]);
 
   return (
     <div className="p-4 space-y-6 pt-safe-top mt-4 max-w-5xl mx-auto">
       <header className="flex flex-col gap-3 mb-2">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">統計總覽</h1>
-          <div className="h-8 w-8 bg-gray-700 rounded-full overflow-hidden border border-gray-600">
-            <div className="w-full h-full flex items-center justify-center bg-gray-800 text-xs">User</div>
+          <div className="h-8 w-8 sf-control rounded-full overflow-hidden">
+            <div className="w-full h-full flex items-center justify-center text-xs text-gray-300">User</div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <div className="flex sf-control rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setPeriodMode('month')}
+              className={`px-3 py-2 text-sm rounded-md transition-colors ${periodMode === 'month' ? 'bg-primary text-white' : 'text-gray-400'}`}
+            >
+              月
+            </button>
+            <button
+              type="button"
+              onClick={() => setPeriodMode('year')}
+              className={`px-3 py-2 text-sm rounded-md transition-colors ${periodMode === 'year' ? 'bg-primary text-white' : 'text-gray-400'}`}
+            >
+              年
+            </button>
+          </div>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="bg-surface rounded-lg px-3 py-2 text-sm border border-gray-700"
+            className="sf-control rounded-lg px-3 py-2 text-sm"
           >
             {yearsOptions.map(y => <option key={y} value={y}>{y} 年</option>)}
           </select>
+          {periodMode === 'month' && (
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="sf-control rounded-lg px-3 py-2 text-sm"
+            >
+              {Array.from({ length: 12 }, (_, i) => i).map(m => (
+                <option key={m} value={m}>{m + 1} 月</option>
+              ))}
+            </select>
+          )}
           <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="bg-surface rounded-lg px-3 py-2 text-sm border border-gray-700"
+            value={selectedCurrency}
+            onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
+            className="sf-control rounded-lg px-3 py-2 text-sm"
+            title="幣別"
           >
-            {Array.from({ length: 12 }, (_, i) => i).map(m => (
-              <option key={m} value={m}>{m + 1} 月</option>
+            {availableCurrencies.map((c) => (
+              <option key={c} value={c}>
+                {c} ({getCurrencySymbol(c)})
+              </option>
             ))}
           </select>
         </div>
       </header>
+
+      {hasOtherCurrenciesInPeriod && (
+        <div className="sf-panel p-3 text-xs text-gray-300">
+          本頁統計以 {selectedCurrency} 計算，已排除其他幣別交易（{periodMode === 'month' ? '本月' : '本年'}）。
+          {selectedCurrency !== currency && <span className="ml-2 text-gray-500">（預算設定以主貨幣 {currency} 為準）</span>}
+        </div>
+      )}
 
       {/* Warning Banner */}
       {isOverBudget && (
@@ -144,27 +215,27 @@ const Dashboard: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-surface rounded-2xl p-4 relative overflow-hidden">
+        <div className="sf-panel p-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-2">
             <TrendingDown className="text-red-500" />
           </div>
-          <p className="text-gray-400 text-xs mb-1">總支出 (本月)</p>
-          <p className="text-2xl font-bold mb-1">{getCurrencySymbol(currency)} {monthlyStats.expense.toLocaleString()}</p>
+          <p className="text-gray-400 text-xs mb-1">總支出 ({periodMode === 'month' ? '本月' : '本年'})</p>
+          <p className="text-2xl font-bold mb-1">{getCurrencySymbol(selectedCurrency)} {periodStats.expense.toLocaleString()}</p>
           <p className="text-xs text-red-400">較上期 (示意)</p>
         </div>
-        <div className="bg-surface rounded-2xl p-4 relative overflow-hidden">
+        <div className="sf-panel p-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-2">
             <TrendingUp className="text-green-500" />
           </div>
-          <p className="text-gray-400 text-xs mb-1">總收入 (本月)</p>
-          <p className="text-2xl font-bold mb-1">{getCurrencySymbol(currency)} {monthlyStats.income.toLocaleString()}</p>
+          <p className="text-gray-400 text-xs mb-1">總收入 ({periodMode === 'month' ? '本月' : '本年'})</p>
+          <p className="text-2xl font-bold mb-1">{getCurrencySymbol(selectedCurrency)} {periodStats.income.toLocaleString()}</p>
           <p className="text-xs text-green-400">較上期 (示意)</p>
         </div>
       </div>
 
       {/* Pie Chart Section */}
-      <div className="bg-surface rounded-2xl p-4 space-y-3">
-        <h3 className="text-lg font-semibold">分類圓餅圖 (本月)</h3>
+      <div className="sf-panel p-4 space-y-3">
+        <h3 className="text-lg font-semibold">分類圓餅圖 ({periodMode === 'month' ? '本月' : '本年'})</h3>
         {finalPieData.length > 0 ? (
           <div className="h-64 relative">
             <ResponsiveContainer width="100%" height="100%">
@@ -200,7 +271,7 @@ const Dashboard: React.FC = () => {
               <div className="flex flex-col">
                 <span className="text-gray-300">{item.name}</span>
                 <span className="text-[11px] text-gray-500">
-                  {getCurrencySymbol(currency)} {item.value.toLocaleString()} ({Math.round(item.value / (monthlyStats.expense || 1) * 100)}%)
+                  {getCurrencySymbol(selectedCurrency)} {item.value.toLocaleString()} ({Math.round(item.value / (periodStats.expense || 1) * 100)}%)
                 </span>
               </div>
             </div>
@@ -209,8 +280,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Line Chart Section */}
-      <div className="bg-surface rounded-2xl p-4 space-y-3">
-        <h3 className="text-lg font-semibold">收支趨勢圖 (近六個月)</h3>
+      <div className="sf-panel p-4 space-y-3">
+        <h3 className="text-lg font-semibold">{periodMode === 'month' ? '收支趨勢圖 (近六個月)' : '收支趨勢圖 (本年每月)'}</h3>
         <div className="h-48 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData}>

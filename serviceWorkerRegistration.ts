@@ -21,6 +21,18 @@ export function register(config?: Config) {
     // Enable locally only when explicitly requested.
     const enableOnLocalhost = import.meta.env.VITE_ENABLE_SW === 'true';
     if (isLocalhost && !enableOnLocalhost) {
+      // If an old SW is still controlling localhost, it can keep serving stale
+      // cached assets and make new builds look unchanged. Proactively remove it.
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          keys
+            .filter((k) => k.startsWith('smartfinance-'))
+            .forEach((k) => caches.delete(k));
+        });
+      }
       return;
     }
 

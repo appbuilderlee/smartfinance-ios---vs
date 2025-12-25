@@ -82,7 +82,7 @@ const CategoryManager: React.FC = () => {
 
    return (
       <div className="min-h-screen bg-background pt-safe-top pb-20">
-         <div className="px-4 py-3 flex justify-between items-center bg-background sticky top-0 z-50 border-b border-gray-800">
+         <div className="px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
             <button onClick={() => navigate(-1)} className="flex items-center text-primary">
                <ChevronLeft size={24} />
             </button>
@@ -92,7 +92,7 @@ const CategoryManager: React.FC = () => {
 
          {/* Tabs */}
          <div className="p-4">
-            <div className="flex bg-surface rounded-xl p-1">
+            <div className="flex sf-control rounded-xl p-1">
                <button
                   onClick={() => setActiveTab(TransactionType.EXPENSE)}
                   className={`flex-1 py-2 rounded-lg text-sm transition-all ${activeTab === TransactionType.EXPENSE ? 'bg-red-500 text-white' : 'text-gray-400'
@@ -112,7 +112,7 @@ const CategoryManager: React.FC = () => {
 
          <div className="px-4 space-y-3">
             {filteredCategories.map(cat => (
-               <div key={cat.id} className="bg-surface rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform">
+               <div key={cat.id} className="sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform">
                   <div className="flex items-center gap-4">
                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${cat.color} text-white`}>
                         {cat.icon.startsWith('emoji:')
@@ -136,7 +136,7 @@ const CategoryManager: React.FC = () => {
          {/* Add/Edit Modal */}
          {showModal && (
             <div className="fixed inset-0 bg-black/70 z-50 flex items-end">
-               <div className="bg-surface w-full rounded-t-3xl p-6 pb-safe-bottom animate-slide-up">
+               <div className="sf-panel w-full rounded-t-3xl p-6 pb-safe-bottom animate-slide-up">
                   <div className="flex justify-between items-center mb-6">
                      <h3 className="text-lg font-semibold text-white">
                         {editingCategory ? '編輯分類' : '新增分類'}
@@ -154,7 +154,7 @@ const CategoryManager: React.FC = () => {
                            placeholder="輸入名稱"
                            value={formData.name}
                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                           className="w-full bg-background rounded-xl p-3 text-white"
+                           className="w-full sf-control rounded-xl p-3 text-white"
                         />
                      </div>
 
@@ -163,13 +163,13 @@ const CategoryManager: React.FC = () => {
                         <div className="flex gap-2 mb-3">
                            <button
                               onClick={() => setIconTab('icons')}
-                              className={`flex-1 py-1.5 text-xs rounded-lg ${iconTab === 'icons' ? 'bg-primary text-white' : 'bg-background text-gray-400'}`}
+                              className={`flex-1 py-1.5 text-xs rounded-lg ${iconTab === 'icons' ? 'bg-primary text-white' : 'sf-control text-gray-400'}`}
                            >
                               圖示
                            </button>
                            <button
                               onClick={() => setIconTab('emoji')}
-                              className={`flex-1 py-1.5 text-xs rounded-lg ${iconTab === 'emoji' ? 'bg-primary text-white' : 'bg-background text-gray-400'}`}
+                              className={`flex-1 py-1.5 text-xs rounded-lg ${iconTab === 'emoji' ? 'bg-primary text-white' : 'sf-control text-gray-400'}`}
                            >
                               表情符號
                            </button>
@@ -180,7 +180,7 @@ const CategoryManager: React.FC = () => {
                                  <button
                                     key={icon}
                                     onClick={() => setFormData({ ...formData, icon })}
-                                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${formData.icon === icon ? 'bg-primary text-white' : 'bg-background text-gray-400'}`}
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${formData.icon === icon ? 'bg-primary text-white' : 'sf-control text-gray-400'}`}
                                  >
                                     <Icon name={icon} size={20} />
                                  </button>
@@ -192,7 +192,7 @@ const CategoryManager: React.FC = () => {
                                  <button
                                     key={emoji}
                                     onClick={() => setFormData({ ...formData, icon: `emoji:${emoji}` })}
-                                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${formData.icon === `emoji:${emoji}` ? 'bg-primary' : 'bg-background'}`}
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${formData.icon === `emoji:${emoji}` ? 'bg-primary' : 'sf-control'}`}
                                  >
                                     {emoji}
                                  </button>
@@ -230,4 +230,3 @@ const CategoryManager: React.FC = () => {
 };
 
 export default CategoryManager;
-

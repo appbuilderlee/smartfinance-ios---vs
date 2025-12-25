@@ -124,7 +124,7 @@ const AddSubscription: React.FC = () => {
   return (
     <div className="min-h-screen bg-background pt-safe-top pb-10">
       {/* Header */}
-      <div className="px-4 py-3 flex justify-between items-center bg-background sticky top-0 z-50">
+      <div className="px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
         <button onClick={handleBack} className="flex items-center text-primary">
           <ChevronLeft size={24} />
         </button>
@@ -137,7 +137,7 @@ const AddSubscription: React.FC = () => {
         {/* Name */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">訂閱名稱</label>
-          <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700">
+          <div className="sf-control rounded-xl px-4 py-3">
             <input
               type="text"
               placeholder="例如：Netflix"
@@ -151,7 +151,7 @@ const AddSubscription: React.FC = () => {
         {/* Amount */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">金額</label>
-          <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center">
+          <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
             <input
               type="number"
               placeholder="0.00"
@@ -166,7 +166,7 @@ const AddSubscription: React.FC = () => {
         {/* Cycle */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">扣款週期</label>
-          <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center">
+          <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
             <select
               value={cycle}
               onChange={(e) => setCycle(e.target.value as 'Monthly' | 'Yearly' | 'Weekly' | 'BiWeekly')}
@@ -187,7 +187,7 @@ const AddSubscription: React.FC = () => {
         {/* Category */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">分類</label>
-          <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center">
+          <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
@@ -208,7 +208,7 @@ const AddSubscription: React.FC = () => {
         {/* Date */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">首次扣款日期</label>
-          <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center cursor-pointer">
+          <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center cursor-pointer">
             <input
               type="date"
               value={date}
@@ -222,7 +222,7 @@ const AddSubscription: React.FC = () => {
         {/* Notes (Optional) */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">備註 (選填)</label>
-          <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700">
+          <div className="sf-control rounded-xl px-4 py-3">
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
@@ -233,13 +233,13 @@ const AddSubscription: React.FC = () => {
         </div>
 
         <div className="pt-4 pb-2">
-          <div className="h-[1px] bg-gray-800 w-full"></div>
+          <div className="h-[1px] sf-divider w-full"></div>
         </div>
 
         {/* Icon preset */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">服務圖示 (可選)</label>
-          <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center">
+          <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
             <select
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
@@ -261,7 +261,7 @@ const AddSubscription: React.FC = () => {
         </div>
 
         {/* Auto Renewal */}
-        <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center">
+        <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
           <span className="text-white">自動續訂</span>
           <div
             onClick={() => setAutoRenewal(!autoRenewal)}
@@ -272,7 +272,7 @@ const AddSubscription: React.FC = () => {
         </div>
 
         {/* Notification Toggle */}
-        <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center">
+        <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
           <span className="text-white">扣款前通知</span>
           <div
             onClick={() => setNotify(!notify)}
@@ -286,7 +286,7 @@ const AddSubscription: React.FC = () => {
         {notify && (
           <div className="animate-fade-in-down">
             <label className="text-gray-400 text-xs ml-1 mb-2 block">提醒時間</label>
-            <div className="bg-surface rounded-xl px-4 py-3 border border-gray-700 flex justify-between items-center">
+            <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
               <span className="text-white">提前 {daysBefore} 天</span>
               <div className="flex gap-2">
                 <button onClick={() => setDaysBefore(String(Math.max(1, parseInt(daysBefore) - 1)))} className="w-6 h-6 bg-gray-600 rounded flex items-center justify-center">-</button>

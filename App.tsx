@@ -28,7 +28,7 @@ import Layout from './components/Layout';
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+  if (loading) return <div className="h-screen bg-background flex items-center justify-center text-white">Loading...</div>;
   return user ? <Outlet /> : <Navigate to="/welcome" />;
 };
 

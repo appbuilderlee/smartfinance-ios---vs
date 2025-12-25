@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Plus } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { Icon } from '../components/Icon';
-import { TransactionType } from '../types';
+import { Currency, TransactionType } from '../types';
 import { getCurrencySymbol } from '../utils/currency';
 
 const Records: React.FC = () => {
@@ -60,11 +60,11 @@ const Records: React.FC = () => {
   return (
     <div className="min-h-screen bg-background pt-safe-top pb-24 px-4">
       {/* Header */}
-      <div className="flex justify-between items-center py-4 sticky top-0 bg-background z-10">
+      <div className="flex justify-between items-center py-4 sticky top-0 sf-topbar z-10 px-4 -mx-4">
         <h1 className="text-3xl font-bold text-white">帳目明細</h1>
         <div className="flex gap-2">
           <button
-            className="p-2 bg-surface rounded-full text-gray-400 hover:text-white transition-colors"
+            className="p-2 sf-control rounded-full text-gray-400 hover:text-white transition-colors"
             onClick={() => {
               setShowFilters(true);
               setTimeout(() => searchInputRef.current?.focus(), 50);
@@ -73,7 +73,7 @@ const Records: React.FC = () => {
             <Search size={20} />
           </button>
           <button
-            className="p-2 bg-surface rounded-full text-gray-400 hover:text-white transition-colors"
+            className="p-2 sf-control rounded-full text-gray-400 hover:text-white transition-colors"
             onClick={() => setShowFilters(v => !v)}
           >
             <Filter size={20} />
@@ -83,7 +83,7 @@ const Records: React.FC = () => {
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-surface/80 border border-gray-800 rounded-2xl p-4 space-y-3 mb-4">
+        <div className="sf-panel p-4 space-y-3 mb-4">
           <div>
             <label className="text-xs text-gray-400 mb-1 block">關鍵字（備註/標籤）</label>
             <input
@@ -92,7 +92,7 @@ const Records: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="輸入關鍵字..."
-              className="w-full bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+              className="w-full sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
             />
           </div>
 
@@ -103,7 +103,7 @@ const Records: React.FC = () => {
                 type="number"
                 value={minAmount}
                 onChange={(e) => setMinAmount(e.target.value)}
-                className="w-full bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="w-full sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
                 placeholder="0"
               />
             </div>
@@ -113,7 +113,7 @@ const Records: React.FC = () => {
                 type="number"
                 value={maxAmount}
                 onChange={(e) => setMaxAmount(e.target.value)}
-                className="w-full bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="w-full sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
                 placeholder="不限"
               />
             </div>
@@ -170,7 +170,7 @@ const Records: React.FC = () => {
           sortedDates.map((date) => (
             <div key={date}>
               <h3 className="text-gray-500 text-sm mb-2 ml-1">{date}</h3>
-              <div className="bg-surface rounded-2xl overflow-hidden divide-y divide-gray-800">
+              <div className="sf-panel overflow-hidden divide-y sf-divider">
                 {grouped[date].map(tx => {
                   const category = categories.find(c => c.id === tx.categoryId);
                   const isExpense = tx.type === TransactionType.EXPENSE;
@@ -190,7 +190,7 @@ const Records: React.FC = () => {
                         </div>
                       </div>
                       <span className={`font-semibold whitespace-nowrap ${isExpense ? 'text-white' : 'text-green-500'}`}>
-                        {isExpense ? '-' : '+'} {getCurrencySymbol(currency)} {tx.amount.toLocaleString()}
+                        {isExpense ? '-' : '+'} {getCurrencySymbol((tx.currency as Currency) || currency)} {tx.amount.toLocaleString()}
                       </span>
                     </div>
                   );
@@ -204,7 +204,7 @@ const Records: React.FC = () => {
       {/* FAB */}
       <button
         onClick={() => navigate('/add')}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 text-white active:scale-95 transition-transform z-20"
+        className="fixed bottom-24 right-6 w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-lg text-white active:scale-95 transition-transform z-20"
       >
         <Plus size={30} />
       </button>

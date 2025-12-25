@@ -5,7 +5,7 @@ import { ChevronLeft, Camera, X, Tag } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { Icon } from '../components/Icon';
 import { getCurrencySymbol } from '../utils/currency';
-import { TransactionType } from '../types';
+import { Currency, TransactionType } from '../types';
 
 const TransactionDetail: React.FC = () => {
    const { id } = useParams();
@@ -24,6 +24,7 @@ const TransactionDetail: React.FC = () => {
    const [receiptUrl, setReceiptUrl] = useState<string | undefined>(tx?.receiptUrl);
    const [isRecurring, setIsRecurring] = useState(tx?.isRecurring || false);
    const [date, setDate] = useState(tx?.date ? new Date(tx.date).toISOString().split('T')[0] : '');
+   const [txCurrency, setTxCurrency] = useState<Currency>((tx?.currency as Currency) || currency);
 
    if (!tx) return <div className="pt-safe-top p-4 text-white">Not found</div>;
 
@@ -40,7 +41,8 @@ const TransactionDetail: React.FC = () => {
          receiptUrl,
          isRecurring,
          date: localDate.toISOString(),
-         type: transactionType
+         type: transactionType,
+         currency: txCurrency
       });
       navigate(-1);
    };
@@ -70,7 +72,7 @@ const TransactionDetail: React.FC = () => {
    return (
       <div className="min-h-screen bg-background pb-safe-bottom">
          {/* Header */}
-         <div className="pt-safe-top px-4 py-3 flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b border-white/5">
+         <div className="pt-safe-top px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
             <button onClick={() => navigate(-1)} className="flex items-center text-primary text-base active:opacity-70">
                <ChevronLeft size={24} />
                <span>返回</span>
@@ -83,9 +85,9 @@ const TransactionDetail: React.FC = () => {
 
          <div className="p-4 space-y-6">
             {/* Amount Card - Editable */}
-            <div className={`rounded-2xl p-6 text-center shadow-lg border border-gray-800 ${transactionType === TransactionType.INCOME ? 'bg-green-900/30' : 'bg-surface'}`}>
+            <div className={`sf-card p-6 text-center ${transactionType === TransactionType.INCOME ? 'bg-green-900/30' : ''}`}>
                <div className="flex items-center justify-center gap-2 mb-4">
-                  <span className="text-2xl text-gray-400">{getCurrencySymbol(currency)}</span>
+                  <span className="text-2xl text-gray-400">{getCurrencySymbol(txCurrency)}</span>
                   <input
                      type="number"
                      value={amount}
@@ -93,6 +95,27 @@ const TransactionDetail: React.FC = () => {
                      className="text-4xl font-bold text-white bg-transparent text-center w-40 focus:outline-none border-b-2 border-gray-600 focus:border-primary"
                      inputMode="decimal"
                   />
+               </div>
+
+               {/* Currency */}
+               <div className="mt-2 flex justify-center">
+                  <div className="sf-control rounded-full px-3 py-1.5 flex items-center gap-2">
+                     <span className="text-xs text-gray-400">幣別</span>
+                     <select
+                        value={txCurrency}
+                        onChange={(e) => setTxCurrency(e.target.value as Currency)}
+                        className="bg-transparent text-gray-200 focus:outline-none text-xs cursor-pointer"
+                     >
+                        <option value="TWD">TWD (NT$)</option>
+                        <option value="HKD">HKD (HK$)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="AUD">AUD (A$)</option>
+                        <option value="CNY">RMB (¥)</option>
+                        <option value="JPY">JPY (¥)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                     </select>
+                  </div>
                </div>
 
                {/* Category Selection */}
@@ -121,7 +144,7 @@ const TransactionDetail: React.FC = () => {
             </div>
 
             {/* Details List */}
-            <div className="bg-surface rounded-2xl overflow-hidden divide-y divide-gray-800 border border-gray-800/50">
+            <div className="sf-panel overflow-hidden divide-y sf-divider">
                <div className="p-4">
                   <span className="text-white text-base block mb-1">日期</span>
                   <input
@@ -138,7 +161,7 @@ const TransactionDetail: React.FC = () => {
                      type="text"
                      value={note}
                      onChange={(e) => setNote(e.target.value)}
-                     className="w-full bg-transparent text-gray-400 focus:outline-none border-b border-gray-700 focus:border-blue-500 pb-1 transition-colors"
+                     className="w-full bg-transparent text-gray-400 focus:outline-none border-b border-gray-700 focus:border-primary pb-1 transition-colors"
                   />
                </div>
 
@@ -146,12 +169,12 @@ const TransactionDetail: React.FC = () => {
                   <span className="text-white text-base block mb-3">標籤</span>
                   <div className="flex flex-wrap items-center gap-2">
                      {tags.map(tag => (
-                        <span key={tag} className="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <span key={tag} className="bg-primary/15 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1 border border-primary/25">
                            {tag}
                            <button onClick={() => removeTag(tag)} className="hover:text-white"><X size={12} /></button>
                         </span>
                      ))}
-                     <div className="flex items-center bg-gray-700/50 rounded-full px-2">
+                     <div className="flex items-center sf-control rounded-full px-2">
                         <Tag size={12} className="text-gray-500 mr-1" />
                         <input
                            type="text"
