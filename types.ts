@@ -21,6 +21,7 @@ export interface Transaction {
   isRecurring?: boolean;
   receiptUrl?: string;
   tags?: string[];
+  currency?: Currency; // Optional per-transaction currency; defaults to app currency
 }
 
 export enum Currency {

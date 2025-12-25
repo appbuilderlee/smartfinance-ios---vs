@@ -11,10 +11,10 @@ interface NumPadProps {
 }
 
 const NumPad: React.FC<NumPadProps> = ({ onNumber, onDelete, onClear, onDone, className = '' }) => {
-    const btnClass = "h-14 rounded-xl text-2xl font-medium bg-surface/50 active:bg-surface hover:bg-surface/80 transition-all text-white flex items-center justify-center backdrop-blur-sm border border-white/5 shadow-sm";
+    const btnClass = "h-14 rounded-xl text-2xl font-medium sf-control active:opacity-70 transition-all text-white flex items-center justify-center";
 
     return (
-        <div className={`grid grid-cols-4 gap-3 p-4 bg-background/90 backdrop-blur-xl border-t border-white/10 ${className}`}>
+        <div className={`grid grid-cols-4 gap-3 p-4 sf-surface border-t sf-divider ${className}`}>
             <button onClick={() => onNumber('7')} className={btnClass}>7</button>
             <button onClick={() => onNumber('8')} className={btnClass}>8</button>
             <button onClick={() => onNumber('9')} className={btnClass}>9</button>

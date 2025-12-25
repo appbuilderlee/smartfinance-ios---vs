@@ -6,15 +6,17 @@ import { MOCK_TRANSACTIONS, CATEGORIES, MOCK_BUDGETS, MOCK_SUBSCRIPTIONS } from 
 export interface CreditCard {
   id: string;
   name: string;
-  lastFourDigits: string;
+  lastFourDigits?: string;
   annualFee: number;
   feeMonth: number;
   cashbackType: string;
   expiryDate: string;
   creditLimit?: number;
+  imageUrl?: string;
+  rewardCategories?: string[];
 }
 
-export type ThemeColor = 'blue' | 'red' | 'green' | 'purple' | 'orange' | 'pink' | 'ios26' | 'blackgold' | 'light';
+export type ThemeName = string;
 
 interface DataContextType {
   transactions: Transaction[];
@@ -23,7 +25,7 @@ interface DataContextType {
   subscriptions: Subscription[];
   currency: Currency;
   creditCards: CreditCard[];
-  themeColor: ThemeColor;
+  themeColor: ThemeName;
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
   updateTransaction: (id: string, tx: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
@@ -42,7 +44,7 @@ interface DataContextType {
   deleteCreditCard: (id: string) => void;
   updateCreditCard: (id: string, updates: Partial<CreditCard>) => void;
   setCreditCards: (cards: CreditCard[]) => void;
-  setThemeColor: (color: ThemeColor) => void;
+  setThemeColor: (color: ThemeName) => void;
   resetData: () => void;
 }
 
@@ -51,6 +53,16 @@ const DataContext = createContext<DataContextType>({} as DataContextType);
 export const useData = () => useContext(DataContext);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const DEFAULT_THEME: ThemeName = 'blue';
+  const normalizeThemeName = (value: unknown): ThemeName => {
+    if (typeof value !== 'string') return DEFAULT_THEME;
+    const trimmed = value.trim();
+    if (!trimmed) return DEFAULT_THEME;
+    // Only allow safe class suffixes (matches `.theme-xxx` blocks in CSS)
+    if (!/^[a-z0-9-]+$/i.test(trimmed)) return DEFAULT_THEME;
+    return trimmed;
+  };
+
   // Load data from localStorage or fallback to Mock Data
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem('smartfinance_transactions');
@@ -74,17 +86,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [currency, setCurrencyState] = useState<Currency>(() => {
     const saved = localStorage.getItem('smartfinance_currency');
-    return (saved as Currency) || Currency.TWD;
+    return (saved as Currency) || Currency.HKD;
   });
+
+  const getTxCurrency = (t: Transaction): Currency => (t.currency as Currency) || currency;
 
   const [creditCards, setCreditCards] = useState<CreditCard[]>(() => {
     const saved = localStorage.getItem('smartfinance_creditcards');
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [themeColor, setThemeColorState] = useState<ThemeColor>(() => {
+  const [themeColor, setThemeColorState] = useState<ThemeName>(() => {
     const saved = localStorage.getItem('smartfinance_themecolor');
-    return (saved as ThemeColor) || 'blue';
+    return normalizeThemeName(saved);
   });
 
   // Persistence Effects
@@ -128,6 +142,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (
           t.categoryId === budget.categoryId &&
           t.type === TransactionType.EXPENSE &&
+          getTxCurrency(t) === currency &&
           tDate.getMonth() === currentMonth &&
           tDate.getFullYear() === currentYear
         ) {
@@ -142,7 +157,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (JSON.stringify(nextBudgets) !== JSON.stringify(budgets)) {
       setBudgets(nextBudgets);
     }
-  }, [transactions, categories]); // Added categories dependency
+  }, [transactions, categories, currency]); // Added categories + currency dependency
 
   const addTransaction = (tx: Omit<Transaction, 'id'>) => {
     const newTx: Transaction = {
@@ -227,7 +242,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCategories(CATEGORIES);
       setBudgets(MOCK_BUDGETS);
       setSubscriptions(MOCK_SUBSCRIPTIONS);
-      setCurrencyState(Currency.TWD);
+      setCurrencyState(Currency.HKD);
       setCreditCards([]);
       setThemeColorState('blue');
       alert("資料已重置");
@@ -239,41 +254,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('smartfinance_creditcards', JSON.stringify(creditCards));
   }, [creditCards]);
 
-  // Persistence and application of theme color
+  // Persistence and application of theme (UI skin)
   useEffect(() => {
     localStorage.setItem('smartfinance_themecolor', themeColor);
+    const root = document.documentElement;
 
-    // Theme configurations
-    const themes: Record<ThemeColor, { primary: string; bg: string; surface: string; text: string }> = {
-      blue: { primary: '#3b82f6', bg: '#0f172a', surface: '#1e293b', text: '#ffffff' },
-      red: { primary: '#ef4444', bg: '#0f172a', surface: '#1e293b', text: '#ffffff' },
-      green: { primary: '#22c55e', bg: '#0f172a', surface: '#1e293b', text: '#ffffff' },
-      purple: { primary: '#a855f7', bg: '#0f172a', surface: '#1e293b', text: '#ffffff' },
-      orange: { primary: '#f97316', bg: '#0f172a', surface: '#1e293b', text: '#ffffff' },
-      pink: { primary: '#ec4899', bg: '#0f172a', surface: '#1e293b', text: '#ffffff' },
-      ios26: { primary: '#06b6d4', bg: 'rgba(15, 23, 42, 0.8)', surface: 'rgba(30, 41, 59, 0.6)', text: '#ffffff' },
-      blackgold: { primary: '#d4af37', bg: '#0a0a0a', surface: '#1a1a1a', text: '#ffffff' },
-      light: { primary: '#3b82f6', bg: '#f8fafc', surface: '#ffffff', text: '#1e293b' }
-    };
-
-    const theme = themes[themeColor];
-    document.documentElement.style.setProperty('--color-primary', theme.primary);
-    document.documentElement.style.setProperty('--color-bg', theme.bg);
-    document.documentElement.style.setProperty('--color-surface', theme.surface);
-    document.documentElement.style.setProperty('--color-text', theme.text);
-
-    // Apply glassmorphism for iOS26 theme
-    if (themeColor === 'ios26') {
-      document.documentElement.classList.add('theme-ios26');
-    } else {
-      document.documentElement.classList.remove('theme-ios26');
+    // Remove previous theme-* classes
+    for (const className of Array.from(root.classList)) {
+      if (className.startsWith('theme-')) root.classList.remove(className);
     }
 
-    // Apply light theme class
+    const normalized = normalizeThemeName(themeColor);
+    root.classList.add(`theme-${normalized}`);
+    root.dataset.sfTheme = normalized;
+
+    // Tailwind `darkMode: 'class'` support
     if (themeColor === 'light') {
-      document.documentElement.classList.add('theme-light');
+      root.classList.remove('dark');
     } else {
-      document.documentElement.classList.remove('theme-light');
+      root.classList.add('dark');
     }
   }, [themeColor]);
 

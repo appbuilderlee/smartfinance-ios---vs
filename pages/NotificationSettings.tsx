@@ -53,7 +53,7 @@ const NotificationSettings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background pt-safe-top">
-      <div className="px-4 py-3 flex justify-between items-center bg-background sticky top-0 z-50">
+      <div className="px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
         <button onClick={() => navigate(-1)} className="flex items-center text-primary">
           <ChevronLeft size={24} />
           <span>設定</span>
@@ -65,7 +65,7 @@ const NotificationSettings: React.FC = () => {
       <div className="p-4 mt-2 space-y-6">
          <div>
             <p className="text-gray-500 text-xs mb-2 ml-4">記帳提醒</p>
-            <div className="bg-surface rounded-2xl overflow-hidden divide-y divide-gray-800 border border-gray-800">
+            <div className="sf-panel overflow-hidden divide-y sf-divider">
                 {/* Toggle Row */}
                 <div className="flex justify-between items-center p-4">
                   <span className="text-white text-base">開啟記帳提醒</span>
@@ -105,10 +105,10 @@ const NotificationSettings: React.FC = () => {
          </div>
 
          {enabled && (
-            <div className="animate-fade-in-up">
+           <div className="animate-fade-in-up">
               <button 
                 onClick={addToCalendar}
-                className="w-full bg-surface border border-primary/50 text-primary py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary/10 active:scale-[0.98] transition-all"
+                className="w-full sf-panel border border-primary/50 text-primary py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary/10 active:scale-[0.98] transition-all"
               >
                 <CalendarCheck size={20} />
                 加入 iPhone 行事曆

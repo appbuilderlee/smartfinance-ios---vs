@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/authService';
-import { Mail, Lock, Eye, EyeOff, PlayCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const { login, demoLogin, resetPassword } = useAuth();
+  const { login, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -19,11 +19,6 @@ const Login: React.FC = () => {
       console.error(error);
       alert('登入失敗: ' + (error.message || '請檢查帳號密碼'));
     }
-  };
-
-  const handleDemo = () => {
-    demoLogin();
-    navigate('/');
   };
 
   return (
@@ -71,21 +66,12 @@ const Login: React.FC = () => {
              </button>
           </div>
 
-          <button type="submit" className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl mt-6 transition-all shadow-lg shadow-blue-500/20">
+          <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl mt-6 transition-all shadow-lg">
              登入
           </button>
         </form>
 
         <div className="mt-4 space-y-4">
-           <button 
-             type="button" 
-             onClick={handleDemo}
-             className="w-full bg-surface border border-gray-700 hover:bg-gray-700 text-gray-300 font-medium py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-           >
-             <PlayCircle size={18} />
-             體驗模式 (Demo)
-           </button>
-           
            <div className="text-center">
               <button
                 className="text-gray-400 text-sm underline"

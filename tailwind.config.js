@@ -9,14 +9,56 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0f172a', // slate-900
-        surface: '#1e293b',    // slate-800
-        primary: 'var(--color-primary)', // Dynamic theme color
-        danger: '#ef4444',     // red-500
-        success: '#22c55e',    // green-500
+        // Token-driven palette (themeable via CSS variables)
+        background: 'rgb(var(--sf-app-bg) / <alpha-value>)',
+        surface: 'rgb(var(--sf-surface-bg) / <alpha-value>)',
+        primary: 'rgb(var(--sf-primary) / <alpha-value>)',
+        danger: 'rgb(var(--sf-danger) / <alpha-value>)',
+        success: 'rgb(var(--sf-success) / <alpha-value>)',
+        // Replace Tailwind defaults with themeable grays used across the app
+        gray: {
+          50: 'rgb(var(--sf-gray-50) / <alpha-value>)',
+          100: 'rgb(var(--sf-gray-100) / <alpha-value>)',
+          200: 'rgb(var(--sf-gray-200) / <alpha-value>)',
+          300: 'rgb(var(--sf-gray-300) / <alpha-value>)',
+          400: 'rgb(var(--sf-gray-400) / <alpha-value>)',
+          500: 'rgb(var(--sf-gray-500) / <alpha-value>)',
+          600: 'rgb(var(--sf-gray-600) / <alpha-value>)',
+          700: 'rgb(var(--sf-gray-700) / <alpha-value>)',
+          800: 'rgb(var(--sf-gray-800) / <alpha-value>)',
+          900: 'rgb(var(--sf-gray-900) / <alpha-value>)'
+        }
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+      },
+      borderRadius: {
+        xl: 'var(--sf-radius-xl)',
+        '2xl': 'var(--sf-radius-2xl)',
+        '3xl': 'var(--sf-radius-3xl)',
+        full: 'var(--sf-radius-full)',
+      },
+      boxShadow: {
+        sm: 'var(--sf-shadow-sm)',
+        md: 'var(--sf-shadow-md)',
+        lg: 'var(--sf-shadow-lg)',
+        xl: 'var(--sf-shadow-xl)',
+      },
+      backdropBlur: {
+        sm: 'var(--sf-blur-sm)',
+        md: 'var(--sf-blur-md)',
+        lg: 'var(--sf-blur-lg)',
+        xl: 'var(--sf-blur-xl)',
+      },
+      transitionDuration: {
+        150: 'var(--sf-motion-fast)',
+        200: 'var(--sf-motion-fast)',
+        300: 'var(--sf-motion-normal)',
+        500: 'var(--sf-motion-slow)',
+      },
+      transitionTimingFunction: {
+        out: 'var(--sf-ease-out)',
+        'in-out': 'var(--sf-ease-in-out)',
       },
       spacing: {
         'safe-top': 'env(safe-area-inset-top)',

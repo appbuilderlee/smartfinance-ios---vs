@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, User, RefreshCw, LogOut, FileDown, Upload, Cloud, CloudOff } from 'lucide-react';
 import { useAuth } from '../services/authService';
 import { useData } from '../contexts/DataContext';
-import { getCurrencySymbol } from '../utils/currency';
 import { backupToFirebase, restoreFromFirebase } from '../services/firebaseBackup';
 
 const Settings: React.FC = () => {
@@ -31,13 +30,14 @@ const Settings: React.FC = () => {
          'ThemeColor'
       ];
 
-      const currencySymbol = getCurrencySymbol(currency);
+      const defaultCurrencyCode = currency;
 
       const txRows = transactions.map(tx => {
          const category = categories.find(c => c.id === tx.categoryId);
          const tags = tx.tags ? tx.tags.join(';') : '';
          const dateStr = new Date(tx.date).toISOString();
          const safeNote = `"${(tx.note || '').replace(/"/g, '""')}"`;
+         const txCurrency = tx.currency || defaultCurrencyCode;
          return [
             'transaction',
             tx.id,
@@ -47,7 +47,7 @@ const Settings: React.FC = () => {
             tx.categoryId,
             category?.name || 'Unknown',
             tx.amount,
-            currencySymbol,
+            txCurrency,
             safeNote,
             tags,
             '',
@@ -138,7 +138,7 @@ const Settings: React.FC = () => {
          s.categoryId || '',
          '',
          s.amount,
-         currencySymbol,
+         defaultCurrencyCode,
          `"${(s.notes || '').replace(/"/g, '""')}"`,
          '',
          '',
@@ -350,6 +350,22 @@ const Settings: React.FC = () => {
             const themeIdx = idx('themecolor');
             if (idIdx < 0 || (txTypeIdx < 0 && budgetLimitIdx < 0)) throw new Error('headers missing');
 
+            const parseCurrency = (raw: string | undefined) => {
+               const v = String(raw || '').trim();
+               if (!v) return null;
+               const upper = v.toUpperCase();
+               if (['TWD','HKD','USD','AUD','CNY','JPY','EUR','GBP'].includes(upper)) return upper;
+               // Legacy exports used symbols
+               if (v === 'NT$') return 'TWD';
+               if (v === 'HK$') return 'HKD';
+               if (v === 'A$') return 'AUD';
+               if (v === '$') return 'USD';
+               if (v === '€') return 'EUR';
+               if (v === '£') return 'GBP';
+               if (v === '¥') return 'JPY';
+               return null;
+            };
+
             const importedTx: any[] = [];
             const importedBudgets: any[] = [];
             const importedCategories: any[] = [];
@@ -405,6 +421,7 @@ const Settings: React.FC = () => {
                     if (themeIdx >= 0 && cols[themeIdx]) importedTheme = cols[themeIdx];
                   } else {
                     const catId = catIdIdx >= 0 ? cols[catIdIdx] : categories.find(c => c.name === cols[catNameIdx])?.id || categories[0]?.id || '';
+                    const parsedCurrency = currencyIdx >= 0 ? parseCurrency(cols[currencyIdx]) : null;
                     importedTx.push({
                       id: cols[idIdx] || Math.random().toString(36).slice(2, 9),
                       date: dateIdx >= 0 ? new Date(cols[dateIdx]).toISOString() : new Date().toISOString(),
@@ -413,7 +430,7 @@ const Settings: React.FC = () => {
                       amount: Number(cols[amtIdx]) || 0,
                       note: noteIdx >= 0 ? cols[noteIdx]?.replace(/^"|"$/g, '') : '',
                       tags: tagsIdx >= 0 && cols[tagsIdx] ? cols[tagsIdx].split(';') : [],
-                      currency: currencyIdx >= 0 ? cols[currencyIdx] : undefined
+                      currency: parsedCurrency || undefined
                     });
                   }
                }
@@ -444,7 +461,7 @@ const Settings: React.FC = () => {
          {/* 帳務管理 */}
          <div>
             <h3 className="text-gray-500 text-xs ml-3 mb-2 uppercase tracking-wider">帳務管理</h3>
-            <div className="bg-surface rounded-2xl overflow-hidden divide-y divide-gray-800">
+            <div className="sf-panel overflow-hidden divide-y sf-divider">
                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-surface/80 active:bg-gray-700/50 transition-colors" onClick={() => navigate('/settings/creditcards')}>
                   <span className="text-white">信用卡管理</span>
                   <ChevronRight className="text-gray-500" size={18} />
@@ -479,7 +496,7 @@ const Settings: React.FC = () => {
          {/* 主要設定 */}
          <div>
             <h3 className="text-gray-500 text-xs ml-3 mb-2 uppercase tracking-wider">主要設定</h3>
-            <div className="bg-surface rounded-2xl overflow-hidden divide-y divide-gray-800">
+            <div className="sf-panel overflow-hidden divide-y sf-divider">
                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-surface/80 active:bg-gray-700/50 transition-colors" onClick={() => navigate('/categories')}>
                   <span className="text-white">分類管理</span>
                   <ChevronRight className="text-gray-500" size={18} />
@@ -512,7 +529,7 @@ const Settings: React.FC = () => {
          {/* 進階功能 */}
          <div>
             <h3 className="text-gray-500 text-xs ml-3 mb-2 uppercase tracking-wider">進階功能</h3>
-            <div className="bg-surface rounded-2xl overflow-hidden divide-y divide-gray-800">
+            <div className="sf-panel overflow-hidden divide-y sf-divider">
                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-surface/80 active:bg-gray-700/50 transition-colors" onClick={() => navigate('/settings/notifications')}>
                   <span className="text-white">通知提醒</span>
                   <div className="flex items-center gap-2">
@@ -530,7 +547,7 @@ const Settings: React.FC = () => {
          {/* Theme Color Section */}
          <div>
             <h3 className="text-gray-500 text-xs ml-3 mb-2 uppercase tracking-wider">外觀設定</h3>
-            <div className="bg-surface rounded-2xl overflow-hidden">
+            <div className="sf-panel overflow-hidden">
                <div className="p-4">
                   <span className="text-white text-sm mb-3 block">主題顏色</span>
                   <div className="flex gap-2 flex-wrap">
@@ -549,21 +566,28 @@ const Settings: React.FC = () => {
                      ))}
                   </div>
                </div>
-               <div className="border-t border-gray-800 p-4">
+               <div className="border-t sf-divider p-4">
                   <span className="text-white text-sm mb-3 block">主題風格</span>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                      <button
                         onClick={() => setThemeColor('ios26')}
                         className={`p-3 rounded-xl text-center transition-all ${themeColor === 'ios26' ? 'ring-2 ring-primary' : ''}`}
                         style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.3), rgba(15,23,42,0.8))' }}
                      >
-                        <span className="text-xs text-white">科技透明</span>
+                        <span className="text-xs text-white">iOS26 玻璃</span>
                      </button>
                      <button
                         onClick={() => setThemeColor('blackgold')}
                         className={`p-3 rounded-xl text-center transition-all bg-black ${themeColor === 'blackgold' ? 'ring-2 ring-yellow-500' : ''}`}
                      >
                         <span className="text-xs text-yellow-500">黑金</span>
+                     </button>
+                     <button
+                        onClick={() => setThemeColor('tech')}
+                        className={`p-3 rounded-xl text-center transition-all ${themeColor === 'tech' ? 'ring-2 ring-primary' : ''}`}
+                        style={{ background: 'linear-gradient(135deg, rgba(34,211,238,0.25), rgba(3,7,18,0.95))' }}
+                     >
+                        <span className="text-xs text-white">科技感</span>
                      </button>
                      <button
                         onClick={() => setThemeColor('light')}
@@ -579,7 +603,7 @@ const Settings: React.FC = () => {
          {/* Section 2 */}
          <div>
             <h3 className="text-gray-500 text-xs ml-3 mb-2 uppercase tracking-wider">帳戶與安全</h3>
-            <div className="bg-surface rounded-2xl overflow-hidden divide-y divide-gray-800">
+            <div className="sf-panel overflow-hidden divide-y sf-divider">
                <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setBiometricEnabled(!biometricEnabled)}>
                   <span className="text-white">生物辨識解鎖</span>
                   <div
@@ -602,8 +626,8 @@ const Settings: React.FC = () => {
          {/* Section 3 */}
          <div>
             <h3 className="text-gray-500 text-xs ml-3 mb-2 uppercase tracking-wider">資料管理</h3>
-            <div className="bg-surface rounded-2xl border border-gray-800 divide-y divide-gray-800 overflow-hidden">
-               <div className="grid grid-cols-2 gap-0 divide-x divide-gray-800">
+            <div className="sf-panel divide-y sf-divider overflow-hidden">
+               <div className="grid grid-cols-2 gap-0 divide-x sf-divider">
                   <button onClick={handleExportJSON} className="p-4 text-white flex items-center justify-center gap-2 hover:bg-surface/80">
                      <FileDown size={16} /> 匯出 JSON
                   </button>
@@ -618,7 +642,7 @@ const Settings: React.FC = () => {
                      onChange={handleImport}
                   />
                </div>
-               <div className="grid grid-cols-2 gap-0 divide-x divide-gray-800">
+               <div className="grid grid-cols-2 gap-0 divide-x sf-divider">
                   <button onClick={handleExportCSV} className="p-4 text-white flex items-center justify-center gap-2 hover:bg-surface/80">
                      <FileDown size={16} /> 匯出 CSV
                   </button>
@@ -633,7 +657,7 @@ const Settings: React.FC = () => {
                      onChange={handleImportCSV}
                   />
                </div>
-               <div className="grid grid-cols-2 gap-0 divide-x divide-gray-800">
+               <div className="grid grid-cols-2 gap-0 divide-x sf-divider">
                   <button
                      onClick={handleCloudBackup}
                      className="p-4 text-white flex items-center justify-center gap-2 hover:bg-surface/80"

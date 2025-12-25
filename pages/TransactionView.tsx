@@ -4,13 +4,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Trash2, Edit2 } from 'lucide-react';
 import { Icon } from '../components/Icon';
 import { useData } from '../contexts/DataContext';
-import { TransactionType } from '../types';
+import { Currency, TransactionType } from '../types';
 import { getCurrencySymbol } from '../utils/currency';
 
 const TransactionView: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { transactions, categories, deleteTransaction } = useData();
+  const { transactions, categories, deleteTransaction, currency } = useData();
 
   // Find transaction from dynamic state
   const transaction = transactions.find(t => t.id === id);
@@ -20,6 +20,7 @@ const TransactionView: React.FC = () => {
   }
 
   const category = categories.find(c => c.id === transaction.categoryId);
+  const txCurrency = (transaction.currency as Currency) || currency;
 
   const isExpense = transaction.type === TransactionType.EXPENSE;
   const formattedDate = new Date(transaction.date).toLocaleString('zh-TW', {
@@ -41,7 +42,7 @@ const TransactionView: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header - Sticky with Safe Area Padding & Backdrop Blur */}
-      <div className="pt-safe-top px-4 py-3 flex justify-between items-center bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b border-white/5 transition-all">
+      <div className="pt-safe-top px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50 transition-all">
         <button onClick={() => navigate(-1)} className="flex items-center text-primary text-base active:opacity-70 transition-opacity">
           <ChevronLeft size={24} />
           <span>返回</span>
@@ -56,7 +57,7 @@ const TransactionView: React.FC = () => {
           {/* Big Total Card */}
           <div className="text-center py-8 animate-fade-in-up">
             <span className={`text-4xl font-bold font-sans tracking-tight ${isExpense ? 'text-red-500' : 'text-green-500'}`}>
-              {isExpense ? '-' : '+'} {getCurrencySymbol(useData().currency)} {transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+              {isExpense ? '-' : '+'} {getCurrencySymbol(txCurrency)} {transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
             </span>
             <div className="flex items-center justify-center gap-2 mt-3 text-gray-400">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center ${category?.color} text-white`}>
@@ -67,7 +68,7 @@ const TransactionView: React.FC = () => {
           </div>
 
           {/* Details List */}
-          <div className="bg-surface rounded-xl overflow-hidden divide-y divide-gray-800 border border-gray-800/50">
+          <div className="sf-panel rounded-xl overflow-hidden divide-y sf-divider">
             <div className="flex justify-between p-4">
               <span className="text-white">日期</span>
               <span className="text-gray-400">{formattedDate}</span>
@@ -83,7 +84,7 @@ const TransactionView: React.FC = () => {
               <div className="flex gap-2">
                 {transaction.tags && transaction.tags.length > 0 ? (
                   transaction.tags.map(tag => (
-                    <span key={tag} className="px-3 py-1 text-xs rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    <span key={tag} className="px-3 py-1 text-xs rounded-full bg-primary/15 text-primary border border-primary/30">
                       {tag}
                     </span>
                   ))
@@ -104,7 +105,7 @@ const TransactionView: React.FC = () => {
                     className="rounded-lg w-full max-h-64 object-cover border border-gray-700 shadow-lg"
                   />
                 ) : (
-                  <div className="w-full h-32 rounded-lg bg-gray-800/50 border border-dashed border-gray-600 flex flex-col items-center justify-center text-gray-500 gap-2">
+                  <div className="w-full h-32 rounded-lg sf-control border-dashed flex flex-col items-center justify-center text-gray-500 gap-2">
                     <Icon name="Image" size={24} />
                     <span className="text-xs">無照片</span>
                   </div>
@@ -118,14 +119,14 @@ const TransactionView: React.FC = () => {
         <div className="mt-auto pt-8 flex flex-col gap-3">
           <button
             onClick={handleDelete}
-            className="w-full bg-surface border border-red-500/30 text-red-500 hover:bg-red-500/10 py-3.5 rounded-xl font-bold shadow-lg active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+            className="w-full sf-panel border border-red-500/30 text-red-500 hover:bg-red-500/10 py-3.5 rounded-xl font-bold shadow-lg active:scale-[0.99] transition-all flex items-center justify-center gap-2"
           >
             <Trash2 size={20} />
             刪除帳目
           </button>
           <button
             onClick={() => navigate(`/edit/${transaction.id}`)}
-            className="w-full bg-surface border border-gray-700 hover:bg-gray-700 text-white py-3.5 rounded-xl font-medium active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+            className="w-full sf-panel hover:bg-surface/80 text-white py-3.5 rounded-xl font-medium active:scale-[0.99] transition-all flex items-center justify-center gap-2"
           >
             <Edit2 size={20} className="text-gray-400" />
             編輯

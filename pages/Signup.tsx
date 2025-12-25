@@ -38,7 +38,7 @@ const Signup: React.FC = () => {
 
    return (
       <div className="min-h-screen bg-background pt-safe-top flex flex-col">
-         <div className="px-4 py-3">
+         <div className="px-4 py-3 sf-topbar">
             <button onClick={() => navigate('/welcome')} className="flex items-center text-gray-400">
                <ChevronLeft /> 返回
             </button>
@@ -48,7 +48,7 @@ const Signup: React.FC = () => {
             <h1 className="text-3xl font-bold mb-8 text-white">註冊帳戶</h1>
 
             <form onSubmit={handleSignup} className="space-y-4">
-               <div className="bg-surface rounded-xl px-4 py-2 border border-gray-700">
+               <div className="sf-control rounded-xl px-4 py-2">
                   <label className="text-xs text-gray-500 block">電子郵件</label>
                   <input
                      type="email"
@@ -59,7 +59,7 @@ const Signup: React.FC = () => {
                   />
                </div>
 
-               <div className="bg-surface rounded-xl px-4 py-2 border border-gray-700 flex items-center justify-between">
+               <div className="sf-control rounded-xl px-4 py-2 flex items-center justify-between">
                   <div className="flex-1">
                      <label className="text-xs text-gray-500 block">密碼</label>
                      <input
@@ -76,7 +76,7 @@ const Signup: React.FC = () => {
                   </button>
                </div>
 
-               <div className="bg-surface rounded-xl px-4 py-2 border border-gray-700">
+               <div className="sf-control rounded-xl px-4 py-2">
                   <label className="text-xs text-gray-500 block">確認密碼</label>
                   <input
                      type="password"
@@ -87,13 +87,13 @@ const Signup: React.FC = () => {
                   />
                </div>
 
-               <button type="submit" className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-full mt-8 shadow-lg shadow-blue-500/20">
+               <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-full mt-8 shadow-lg">
                   註冊
                </button>
             </form>
 
             <div className="mt-6 text-center">
-               <p className="text-gray-500 text-sm">已有帳戶？ <button onClick={() => navigate('/login')} className="text-blue-400">登入</button></p>
+               <p className="text-gray-500 text-sm">已有帳戶？ <button onClick={() => navigate('/login')} className="text-primary">登入</button></p>
             </div>
          </div>
       </div>

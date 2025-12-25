@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ChevronLeft, BarChart2, Download, PieChart, BarChart3, LineChart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
-import { TransactionType } from '../types';
+import { Currency, TransactionType } from '../types';
 import { getCurrencySymbol } from '../utils/currency';
 
 type ReportMode = 'year' | 'category-year' | 'all' | 'all-category' | 'custom';
@@ -12,6 +12,17 @@ type RangePreset = 'this-month' | 'last-month' | 'this-quarter' | 'this-year' | 
 const Reports: React.FC = () => {
   const navigate = useNavigate();
   const { transactions, categories, currency, budgets } = useData();
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(currency);
+
+  const availableCurrencies = useMemo(() => {
+    const set = new Set<Currency>();
+    set.add(currency);
+    transactions.forEach((t) => {
+      const txCurrency = (t.currency as Currency) || currency;
+      set.add(txCurrency);
+    });
+    return Array.from(set);
+  }, [transactions, currency]);
 
   const years = useMemo(() => {
     const uniqueYears = new Set<string>();
@@ -42,7 +53,7 @@ const Reports: React.FC = () => {
   const [keyword, setKeyword] = useState<string>('');
   const [periodView, setPeriodView] = useState<'month' | 'quarter' | 'year'>('month');
 
-  const currencySymbol = getCurrencySymbol(currency);
+  const currencySymbol = getCurrencySymbol(selectedCurrency);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -52,6 +63,8 @@ const Reports: React.FC = () => {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(tx => {
+      const txCurrency = (tx.currency as Currency) || currency;
+      if (txCurrency !== selectedCurrency) return false;
       const date = new Date(tx.date);
       if (Number.isNaN(date.getTime())) return false;
       const y = String(date.getFullYear());
@@ -80,7 +93,14 @@ const Reports: React.FC = () => {
       }
       return true;
     });
-  }, [transactions, mode, year, categoryId, range.start, range.end, selectedCategories, selectedTags, minAmount, maxAmount, keyword]);
+  }, [transactions, mode, year, categoryId, range.start, range.end, selectedCategories, selectedTags, minAmount, maxAmount, keyword, currency, selectedCurrency]);
+
+  const hasOtherCurrencies = useMemo(() => {
+    return transactions.some((t) => {
+      const txCurrency = (t.currency as Currency) || currency;
+      return txCurrency !== selectedCurrency;
+    });
+  }, [transactions, currency, selectedCurrency]);
 
   const totals = useMemo(() => {
     return filteredTransactions.reduce(
@@ -257,7 +277,7 @@ const Reports: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-white pb-24">
-      <div className="flex items-center justify-between px-4 py-3 bg-background sticky top-0 z-50">
+      <div className="flex items-center justify-between px-4 py-3 sf-topbar sticky top-0 z-50">
         <button onClick={() => navigate(-1)} className="text-primary flex items-center gap-1">
           <ChevronLeft size={22} /> 返回
         </button>
@@ -268,6 +288,27 @@ const Reports: React.FC = () => {
       </div>
 
       <div className="p-4 space-y-4">
+        {hasOtherCurrencies && (
+          <div className="sf-panel p-3 text-xs text-gray-300">
+            本頁報表以 {selectedCurrency} 計算，已排除其他幣別交易。
+            {selectedCurrency !== currency && <span className="ml-2 text-gray-500">（預算設定以主貨幣 {currency} 為準）</span>}
+          </div>
+        )}
+
+        <div className="sf-panel p-3 flex items-center justify-between">
+          <span className="text-xs text-gray-400">幣別</span>
+          <select
+            value={selectedCurrency}
+            onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
+            className="bg-transparent text-gray-200 focus:outline-none cursor-pointer text-sm"
+          >
+            {availableCurrencies.map((c) => (
+              <option key={c} value={c} className="bg-surface">
+                {c} ({getCurrencySymbol(c)})
+              </option>
+            ))}
+          </select>
+        </div>
         {/* Mode selector */}
         <div className="grid grid-cols-2 gap-2">
           {([
@@ -280,7 +321,7 @@ const Reports: React.FC = () => {
             <button
               key={item.key}
               onClick={() => setMode(item.key)}
-              className={`p-3 rounded-xl text-sm transition-all ${mode === item.key ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'bg-surface text-gray-200'}`}
+              className={`p-3 rounded-xl text-sm transition-all ${mode === item.key ? 'bg-primary text-white shadow-lg' : 'sf-control text-gray-200'}`}
             >
               {item.label}
             </button>
@@ -288,7 +329,7 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Filters (moved up) */}
-        <div className="bg-surface rounded-2xl p-4 space-y-3 border border-gray-800">
+        <div className="sf-panel p-4 space-y-3">
           <h3 className="text-sm text-gray-400">篩選</h3>
           <div className="space-y-2">
             <div className="flex gap-2">
@@ -297,21 +338,21 @@ const Reports: React.FC = () => {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="關鍵字（備註/標籤）"
-                className="flex-1 bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="flex-1 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
               />
               <input
                 type="number"
                 value={minAmount}
                 onChange={(e) => setMinAmount(e.target.value)}
                 placeholder="最小金額"
-                className="w-28 bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
               />
               <input
                 type="number"
                 value={maxAmount}
                 onChange={(e) => setMaxAmount(e.target.value)}
                 placeholder="最大金額"
-                className="w-28 bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
               />
             </div>
 
@@ -373,7 +414,7 @@ const Reports: React.FC = () => {
               <select
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
               >
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -386,7 +427,7 @@ const Reports: React.FC = () => {
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
               >
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -403,7 +444,7 @@ const Reports: React.FC = () => {
                   type="date"
                   value={range.start}
                   onChange={(e) => setRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -412,7 +453,7 @@ const Reports: React.FC = () => {
                   type="date"
                   value={range.end}
                   onChange={(e) => setRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -420,7 +461,7 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Summary / KPI */}
-        <div className="bg-surface rounded-2xl p-4 border border-gray-800 space-y-3">
+        <div className="sf-panel p-4 space-y-3">
           <h3 className="text-sm text-gray-400">總覽</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
@@ -433,7 +474,7 @@ const Reports: React.FC = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
+            <div className="p-3 rounded-xl bg-primary/10 border border-primary/30">
               <p className="text-xs text-gray-300">淨額</p>
               <p className={`text-xl font-bold ${net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                 {net >= 0 ? '+' : '-'}{currencySymbol} {Math.abs(net).toLocaleString()}
@@ -470,7 +511,7 @@ const Reports: React.FC = () => {
           </div>
           <button
             onClick={exportCSV}
-            className="w-full mt-2 bg-background border border-gray-800 rounded-lg py-2 text-sm flex items-center justify-center gap-2 hover:bg-background/80 transition-colors"
+            className="w-full mt-2 sf-control rounded-lg py-2 text-sm flex items-center justify-center gap-2 hover:bg-background/80 transition-colors"
           >
             <Download size={16} /> 匯出目前篩選結果 (CSV)
           </button>
@@ -478,15 +519,15 @@ const Reports: React.FC = () => {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-4 rounded-2xl bg-surface border border-gray-800">
+          <div className="p-4 rounded-2xl sf-panel">
             <p className="text-xs text-gray-400">本月收入</p>
             <p className="text-xl font-bold text-emerald-400 mt-1">{currencySymbol} {thisMonthIncome.toLocaleString()}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-surface border border-gray-800">
+          <div className="p-4 rounded-2xl sf-panel">
             <p className="text-xs text-gray-400">本月支出</p>
             <p className="text-xl font-bold text-red-400 mt-1">{currencySymbol} {thisMonthExpense.toLocaleString()}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-surface border border-gray-800 col-span-2">
+          <div className="p-4 rounded-2xl sf-panel col-span-2">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400">本月淨額</p>
@@ -509,7 +550,7 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Category breakdown */}
-        <div className="bg-surface rounded-2xl p-4 border border-gray-800 space-y-3">
+        <div className="sf-panel p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm text-gray-400">分類彙總</h3>
             <div className="flex gap-2 text-xs">
@@ -580,7 +621,7 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Trend */}
-        <div className="bg-surface rounded-2xl p-4 border border-gray-800 space-y-3">
+        <div className="sf-panel p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm text-gray-400">趨勢</h3>
             <div className="flex gap-2 text-xs">
@@ -636,7 +677,7 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Top 5 */}
-        <div className="bg-surface rounded-2xl p-4 border border-gray-800 space-y-3">
+        <div className="sf-panel p-4 space-y-3">
           <h3 className="text-sm text-gray-400">支出 Top 5 分類</h3>
           {expenseTop5.length === 0 && <div className="text-center text-gray-500 text-sm py-6">尚無資料</div>}
           {expenseTop5.length > 0 && (
@@ -664,7 +705,7 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Filters (placed after charts) */}
-        <div className="bg-surface rounded-2xl p-4 space-y-3 border border-gray-800">
+        <div className="sf-panel p-4 space-y-3">
           <h3 className="text-sm text-gray-400">篩選</h3>
           <div className="space-y-2">
             <div className="flex gap-2">
@@ -673,21 +714,21 @@ const Reports: React.FC = () => {
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 placeholder="關鍵字（備註/標籤）"
-                className="flex-1 bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="flex-1 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
               />
               <input
                 type="number"
                 value={minAmount}
                 onChange={(e) => setMinAmount(e.target.value)}
                 placeholder="最小金額"
-                className="w-28 bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
               />
               <input
                 type="number"
                 value={maxAmount}
                 onChange={(e) => setMaxAmount(e.target.value)}
                 placeholder="最大金額"
-                className="w-28 bg-background text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
               />
             </div>
 
@@ -749,7 +790,7 @@ const Reports: React.FC = () => {
               <select
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
               >
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -762,7 +803,7 @@ const Reports: React.FC = () => {
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
               >
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -779,7 +820,7 @@ const Reports: React.FC = () => {
                   type="date"
                   value={range.start}
                   onChange={(e) => setRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -788,7 +829,7 @@ const Reports: React.FC = () => {
                   type="date"
                   value={range.end}
                   onChange={(e) => setRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
                 />
               </div>
             </div>

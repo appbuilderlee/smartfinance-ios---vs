@@ -1,18 +1,21 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, CreditCard, Trash2, X, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronLeft, Plus, CreditCard, Trash2, X, Pencil, ArrowUp, ArrowDown, Cloud, Search } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { CardCatalogItem, fetchCardCatalog } from '../services/cardCatalog';
 
 interface CreditCardType {
     id: string;
     name: string;
-    lastFourDigits: string;
+    lastFourDigits?: string;
     annualFee: number;
     feeMonth: number; // 1-12
     cashbackType: string;
     expiryDate: string; // YYYY-MM
     creditLimit?: number;
+    imageUrl?: string;
+    rewardCategories?: string[];
 }
 
 const CreditCardManager: React.FC = () => {
@@ -21,6 +24,10 @@ const CreditCardManager: React.FC = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [catalogLoading, setCatalogLoading] = useState(false);
+    const [catalogError, setCatalogError] = useState<string | null>(null);
+    const [catalog, setCatalog] = useState<CardCatalogItem[]>([]);
+    const [catalogQuery, setCatalogQuery] = useState('');
     const [formData, setFormData] = useState<Partial<CreditCardType>>({
         name: '',
         lastFourDigits: '',
@@ -28,24 +35,54 @@ const CreditCardManager: React.FC = () => {
         feeMonth: 1,
         cashbackType: '',
         expiryDate: '',
-        creditLimit: undefined
+        creditLimit: undefined,
+        imageUrl: undefined,
+        rewardCategories: []
     });
 
     const openAddModal = () => {
         setEditingId(null);
-        setFormData({ name: '', lastFourDigits: '', annualFee: 0, feeMonth: 1, cashbackType: '', expiryDate: '', creditLimit: undefined });
+        setFormData({ name: '', lastFourDigits: '', annualFee: 0, feeMonth: 1, cashbackType: '', expiryDate: '', creditLimit: undefined, imageUrl: undefined, rewardCategories: [] });
+        setCatalogQuery('');
+        setCatalogError(null);
         setShowModal(true);
     };
 
     const openEditModal = (card: CreditCardType) => {
         setEditingId(card.id);
         setFormData({ ...card });
+        setCatalogQuery('');
+        setCatalogError(null);
         setShowModal(true);
     };
 
+    const loadCatalog = async () => {
+        setCatalogError(null);
+        setCatalogLoading(true);
+        try {
+            const items = await fetchCardCatalog();
+            setCatalog(items);
+        } catch (err: any) {
+            setCatalogError(err?.message || '載入失敗');
+        } finally {
+            setCatalogLoading(false);
+        }
+    };
+
+    const applyCatalogItem = (item: CardCatalogItem) => {
+        const points = item.sellingPoints?.filter(Boolean) || item.tags?.filter(Boolean) || [];
+        setFormData((prev) => ({
+            ...prev,
+            name: item.name,
+            cashbackType: points.length ? points.join('\n') : (prev.cashbackType || ''),
+            imageUrl: item.imageUrl || prev.imageUrl,
+            rewardCategories: item.rewardCategories || prev.rewardCategories || [],
+        }));
+    };
+
     const handleSave = () => {
-        if (!formData.name || !formData.lastFourDigits) {
-            alert('請填寫卡片名稱與末四碼');
+        if (!formData.name) {
+            alert('請填寫卡片名稱');
             return;
         }
 
@@ -77,7 +114,7 @@ const CreditCardManager: React.FC = () => {
     return (
         <div className="min-h-screen bg-background pb-20 pt-safe-top">
             {/* Header */}
-            <div className="px-4 py-3 flex justify-between items-center bg-surface sticky top-0 z-50">
+            <div className="px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
                 <button onClick={() => navigate(-1)} className="flex items-center text-primary">
                     <ChevronLeft size={24} />
                 </button>
@@ -101,15 +138,21 @@ const CreditCardManager: React.FC = () => {
                     </div>
                 ) : (
                     creditCards.map((card, index) => (
-                        <div key={card.id} className="bg-surface rounded-2xl p-4 border border-gray-800 relative group">
+                        <div key={card.id} className="sf-panel p-4 relative group">
                             <div className="flex justify-between items-start mb-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                        <CreditCard size={20} className="text-white" />
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center overflow-hidden">
+                                        {card.imageUrl ? (
+                                            <img src={card.imageUrl} alt={card.name} className="w-full h-full object-contain bg-black/20" />
+                                        ) : (
+                                            <CreditCard size={20} className="text-white" />
+                                        )}
                                     </div>
                                     <div>
                                         <h3 className="text-white font-medium">{card.name}</h3>
-                                        <p className="text-gray-500 text-sm">**** {card.lastFourDigits}</p>
+                                        <p className="text-gray-500 text-sm">
+                                            {card.lastFourDigits ? `**** ${card.lastFourDigits}` : '末四碼未設定'}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -165,6 +208,23 @@ const CreditCardManager: React.FC = () => {
                                     <p className="text-gray-500">回贈優惠</p>
                                     <p className="text-white whitespace-pre-line">{card.cashbackType || '無'}</p>
                                 </div>
+                                <div className="col-span-2">
+                                    <p className="text-gray-500">回贈類別（API）</p>
+                                    {card.rewardCategories?.length ? (
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            {card.rewardCategories.map((c: string) => (
+                                                <span
+                                                    key={c}
+                                                    className="text-[11px] px-2 py-1 rounded-full bg-primary/15 text-primary border border-primary/25"
+                                                >
+                                                    {c}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500">未設定</p>
+                                    )}
+                                </div>
                                 <div>
                                     <p className="text-gray-500">到期日</p>
                                     <p className="text-white">{card.expiryDate || '未設定'}</p>
@@ -178,7 +238,7 @@ const CreditCardManager: React.FC = () => {
             {/* Add/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/70 z-50 flex items-end">
-                    <div className="bg-surface w-full rounded-t-3xl p-6 pb-safe-bottom animate-slide-up max-h-[90vh] overflow-y-auto">
+                    <div className="sf-panel w-full rounded-t-3xl p-6 pb-safe-bottom animate-slide-up max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-semibold text-white">{editingId ? '編輯信用卡' : '新增信用卡'}</h3>
                             <button onClick={() => setShowModal(false)} className="text-gray-400">
@@ -187,6 +247,97 @@ const CreditCardManager: React.FC = () => {
                         </div>
 
                         <div className="space-y-4">
+                            {/* Catalog (API) */}
+                            <div className="sf-control rounded-xl p-3 space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="text-sm text-gray-200 flex items-center gap-2">
+                                        <Cloud size={16} className="text-primary" />
+                                        從卡片資料庫帶入（API）
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={loadCatalog}
+                                        className="text-xs text-primary px-2 py-1 rounded-lg hover:bg-white/5"
+                                        disabled={catalogLoading}
+                                    >
+                                        {catalogLoading ? '載入中…' : (catalog.length ? '更新' : '載入')}
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <Search size={16} className="text-gray-500" />
+                                    <input
+                                        type="text"
+                                        placeholder="搜尋：卡名 / 銀行 / 標籤"
+                                        value={catalogQuery}
+                                        onChange={(e) => setCatalogQuery(e.target.value)}
+                                        className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none text-sm"
+                                    />
+                                </div>
+
+                                {catalogError && (
+                                    <div className="text-xs text-red-400">{catalogError}</div>
+                                )}
+
+                                {catalog.length > 0 && (
+                                    <div className="max-h-44 overflow-y-auto space-y-2 pt-1">
+                                        {catalog
+                                            .filter((it) => {
+                                                const q = catalogQuery.trim().toLowerCase();
+                                                if (!q) return true;
+                                                const hay = [
+                                                    it.name,
+                                                    it.bank || '',
+                                                    ...(it.tags || []),
+                                                ].join(' ').toLowerCase();
+                                                return hay.includes(q);
+                                            })
+                                            .slice(0, 12)
+                                            .map((it) => (
+                                                <button
+                                                    key={it.id}
+                                                    type="button"
+                                                    onClick={() => applyCatalogItem(it)}
+                                                    className="w-full text-left sf-panel px-3 py-2 rounded-lg hover:bg-surface/80 transition-colors"
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-black/20 overflow-hidden flex items-center justify-center shrink-0">
+                                                            {it.imageUrl ? (
+                                                                <img src={it.imageUrl} alt={it.name} className="w-full h-full object-contain" />
+                                                            ) : (
+                                                                <CreditCard size={18} className="text-gray-400" />
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="text-sm text-white font-medium truncate">{it.name}</div>
+                                                            <div className="text-xs text-gray-500 truncate">{it.bank || it.id}</div>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Reward categories */}
+                            <div>
+                                <label className="text-gray-400 text-sm mb-2 block">回贈類別（API）</label>
+                                {formData.rewardCategories?.length ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.rewardCategories.map((c) => (
+                                            <span
+                                                key={c}
+                                                className="text-[11px] px-2 py-1 rounded-full bg-primary/15 text-primary border border-primary/25"
+                                            >
+                                                {c}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-500">未設定（可從上方 API 選卡帶入）</div>
+                                )}
+                            </div>
+
                             <div>
                                 <label className="text-gray-400 text-sm mb-1 block">卡片名稱</label>
                                 <input
@@ -194,7 +345,7 @@ const CreditCardManager: React.FC = () => {
                                     placeholder="例如: 渣打 Simply Cash"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-background rounded-xl p-3 text-white"
+                                    className="w-full sf-control rounded-xl p-3 text-white"
                                 />
                             </div>
 
@@ -202,11 +353,11 @@ const CreditCardManager: React.FC = () => {
                                 <label className="text-gray-400 text-sm mb-1 block">卡號末四碼</label>
                                 <input
                                     type="text"
-                                    placeholder="1234"
+                                    placeholder="1234（可不填）"
                                     maxLength={4}
-                                    value={formData.lastFourDigits}
+                                    value={formData.lastFourDigits || ''}
                                     onChange={e => setFormData({ ...formData, lastFourDigits: e.target.value })}
-                                    className="w-full bg-background rounded-xl p-3 text-white"
+                                    className="w-full sf-control rounded-xl p-3 text-white"
                                 />
                             </div>
 
@@ -218,7 +369,7 @@ const CreditCardManager: React.FC = () => {
                                         placeholder="0"
                                         value={formData.annualFee}
                                         onChange={e => setFormData({ ...formData, annualFee: Number(e.target.value) })}
-                                        className="w-full bg-background rounded-xl p-3 text-white"
+                                        className="w-full sf-control rounded-xl p-3 text-white"
                                     />
                                 </div>
                                 <div>
@@ -228,7 +379,7 @@ const CreditCardManager: React.FC = () => {
                                         placeholder="例如 200000"
                                         value={formData.creditLimit ?? ''}
                                         onChange={e => setFormData({ ...formData, creditLimit: e.target.value === '' ? undefined : Number(e.target.value) })}
-                                        className="w-full bg-background rounded-xl p-3 text-white"
+                                        className="w-full sf-control rounded-xl p-3 text-white"
                                     />
                                 </div>
                                 <div>
@@ -236,7 +387,7 @@ const CreditCardManager: React.FC = () => {
                                     <select
                                         value={formData.feeMonth}
                                         onChange={e => setFormData({ ...formData, feeMonth: Number(e.target.value) })}
-                                        className="w-full bg-background rounded-xl p-3 text-white"
+                                        className="w-full sf-control rounded-xl p-3 text-white"
                                     >
                                         {months.map(m => (
                                             <option key={m} value={m}>{m}月</option>
@@ -252,7 +403,7 @@ const CreditCardManager: React.FC = () => {
                                     rows={3}
                                     value={formData.cashbackType}
                                     onChange={e => setFormData({ ...formData, cashbackType: e.target.value })}
-                                    className="w-full bg-background rounded-xl p-3 text-white resize-none"
+                                    className="w-full sf-control rounded-xl p-3 text-white resize-none"
                                 />
                             </div>
 
@@ -262,13 +413,13 @@ const CreditCardManager: React.FC = () => {
                                     type="month"
                                     value={formData.expiryDate}
                                     onChange={e => setFormData({ ...formData, expiryDate: e.target.value })}
-                                    className="w-full bg-background rounded-xl p-3 text-white"
+                                    className="w-full sf-control rounded-xl p-3 text-white"
                                 />
                             </div>
 
                             <button
                                 onClick={handleSave}
-                                className="w-full bg-primary py-4 rounded-xl font-bold text-white mt-4"
+                                className="w-full bg-primary py-4 rounded-xl font-bold text-white mt-4 shadow-lg"
                             >
                                 {editingId ? '儲存變更' : '新增'}
                             </button>

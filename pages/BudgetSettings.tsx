@@ -15,7 +15,7 @@ const BudgetSettings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-safe-top">
-      <div className="px-4 py-3 flex justify-between items-center bg-surface sticky top-0 z-50">
+      <div className="px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
         <button onClick={() => navigate(-1)} className="flex items-center text-primary">
           <ChevronLeft size={24} />
         </button>
@@ -25,7 +25,7 @@ const BudgetSettings: React.FC = () => {
 
       <div className="p-4 space-y-6">
         {/* Total Budget Card */}
-        <div className="bg-surface rounded-2xl p-5 border border-gray-800">
+        <div className="sf-panel p-5">
           <div className="flex justify-between items-end mb-2">
             <div>
               <p className="text-gray-400 text-sm">本月總預算</p>
@@ -58,7 +58,7 @@ const BudgetSettings: React.FC = () => {
             const barColor = percent > 90 ? 'bg-red-500' : 'bg-blue-500';
 
             return (
-              <div key={budget.categoryId} className="bg-surface/50 p-4 rounded-xl">
+              <div key={budget.categoryId} className="sf-panel p-4 rounded-xl">
                 <div className="flex items-center gap-3 mb-3">
                   <Icon name={cat.icon} className={cat.color.replace('bg-', 'text-')} size={24} />
                   <span className="font-medium flex-1">{cat.name}</span>
@@ -85,7 +85,7 @@ const BudgetSettings: React.FC = () => {
                     />
                   </div>
                   <div className="w-32">
-                    <div className="flex items-center gap-1 bg-gray-900/60 border border-gray-700 rounded-lg px-2 py-1">
+                    <div className="flex items-center gap-1 sf-control rounded-lg px-2 py-1">
                       <span className="text-xs text-gray-400">{getCurrencySymbol(currency)}</span>
                       <input
                         type="number"

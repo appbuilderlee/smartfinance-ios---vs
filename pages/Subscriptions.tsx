@@ -54,7 +54,7 @@ const Subscriptions: React.FC = () => {
 
    return (
       <div className="min-h-screen bg-background pb-24 pt-safe-top">
-         <div className="px-4 py-3 flex justify-between items-center bg-background sticky top-0 z-50">
+         <div className="px-4 py-3 flex justify-between items-center sf-topbar sticky top-0 z-50">
             <button
                onClick={() => navigate(fromPath, { replace: true })}
                className="flex items-center text-primary"
@@ -73,12 +73,12 @@ const Subscriptions: React.FC = () => {
                <h1 className="text-4xl font-bold mt-1">{getCurrencySymbol(currency)} {Math.round(totalMonthly).toLocaleString()}</h1>
             </div>
 
-            <div className="bg-surface rounded-xl p-3 border border-gray-800 flex items-center justify-between text-sm">
+            <div className="sf-panel rounded-xl p-3 flex items-center justify-between text-sm">
                <span className="text-gray-300">分類篩選</span>
                <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="bg-background text-white rounded-lg px-3 py-2 text-sm"
+                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
                >
                   <option value="all">全部</option>
                   {categories.filter(c => c.type === 'EXPENSE').map(cat => (
@@ -98,7 +98,7 @@ const Subscriptions: React.FC = () => {
                         : null;
                      const iconEmoji = sub.icon?.startsWith('emoji:') ? sub.icon.replace('emoji:', '') : (sub.icon || getSubIcon(sub.name));
                      return (
-                     <div key={sub.id} className="bg-surface rounded-2xl p-4 flex items-center justify-between">
+                     <div key={sub.id} className="sf-panel p-4 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                            <div className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-lg shadow-lg uppercase">
                               {iconEmoji || sub.name[0]}
@@ -133,7 +133,7 @@ const Subscriptions: React.FC = () => {
 
             <button
                onClick={() => navigate('/add-subscription', { state: { from: location.state?.from || '/subscriptions' } })}
-               className="fixed bottom-24 right-6 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30 text-white active:scale-95 transition-transform"
+               className="fixed bottom-24 right-6 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg text-white active:scale-95 transition-transform"
             >
                <Plus size={30} />
             </button>
