@@ -230,7 +230,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const resetData = () => {
-    if (window.confirm("確定要重置所有資料？這將清除您的所有紀錄並恢復為範例資料。")) {
+    if (!window.confirm("確定要重置所有資料？這將清除您的所有紀錄（包含交易/訂閱/信用卡等）。")) return;
+
+    try {
       localStorage.removeItem('smartfinance_transactions');
       localStorage.removeItem('smartfinance_categories');
       localStorage.removeItem('smartfinance_budgets');
@@ -238,15 +240,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('smartfinance_currency');
       localStorage.removeItem('smartfinance_creditcards');
       localStorage.removeItem('smartfinance_themecolor');
-      setTransactions(MOCK_TRANSACTIONS);
-      setCategories(CATEGORIES);
-      setBudgets(MOCK_BUDGETS);
-      setSubscriptions(MOCK_SUBSCRIPTIONS);
-      setCurrencyState(Currency.HKD);
-      setCreditCards([]);
-      setThemeColorState('blue');
-      alert("資料已重置");
+      localStorage.removeItem('sf_theme_debug');
+    } catch {
+      // ignore
     }
+
+    // Also clear any app caches / stale service worker state (best-effort).
+    try {
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          keys
+            .filter((k) => k.startsWith('smartfinance-') || k.startsWith('smartfinance'))
+            .forEach((k) => caches.delete(k));
+        });
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
+      }
+    } catch {
+      // ignore
+    }
+
+    // Reset in-memory state to truly empty, so "記錄" 不會殘留舊資料
+    // (and avoid subscription auto-post creating new transactions immediately).
+    setTransactions([]);
+    setCategories(CATEGORIES);
+    setBudgets([]); // will be auto-synced to categories with limit 0
+    setSubscriptions([]);
+    setCurrencyState(Currency.HKD);
+    setCreditCards([]);
+    setThemeColorState('blue');
+
+    alert("資料已重置");
   };
 
   // Persistence for credit cards
