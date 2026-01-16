@@ -1,14 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ChevronLeft, BarChart2, Download, PieChart, BarChart3, LineChart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { Currency, TransactionType } from '../types';
 import { getCurrencySymbol } from '../utils/currency';
 
-type ReportMode = 'year' | 'category-year' | 'all' | 'all-category' | 'custom';
 type CategoryChartMode = 'pie' | 'bar';
 type TrendChartMode = 'bar' | 'line';
-type RangePreset = 'this-month' | 'last-month' | 'this-quarter' | 'this-year' | 'all';
+type RangePreset = 'this-month' | 'this-year' | 'all' | 'custom';
 
 const Reports: React.FC = () => {
   const navigate = useNavigate();
@@ -25,35 +24,20 @@ const Reports: React.FC = () => {
     return Array.from(set);
   }, [transactions, currency]);
 
-  const years = useMemo(() => {
-    const uniqueYears = new Set<string>();
-    transactions.forEach(t => {
-      const year = new Date(t.date).getFullYear();
-      if (!Number.isNaN(year)) uniqueYears.add(String(year));
-    });
-    const arr = Array.from(uniqueYears);
-    return arr.length ? arr.sort((a, b) => Number(b) - Number(a)) : [String(new Date().getFullYear())];
-  }, [transactions]);
-
-  const [mode, setMode] = useState<ReportMode>('year');
-  const [year, setYear] = useState<string>(years[0]);
-  const [categoryId, setCategoryId] = useState<string>(() => {
-    const first = categories[0];
-    return first ? first.id : '';
-  });
   const [range, setRange] = useState<{ start: string; end: string }>({
     start: '',
     end: ''
   });
   const [categoryChartMode, setCategoryChartMode] = useState<CategoryChartMode>('bar');
   const [trendChartMode, setTrendChartMode] = useState<TrendChartMode>('bar');
-  const [preset, setPreset] = useState<RangePreset>('all');
+  const [preset, setPreset] = useState<RangePreset>('this-month');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [minAmount, setMinAmount] = useState<string>('');
   const [maxAmount, setMaxAmount] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
   const [periodView, setPeriodView] = useState<'month' | 'quarter' | 'year'>('month');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const currencySymbol = getCurrencySymbol(selectedCurrency);
 
@@ -71,16 +55,9 @@ const Reports: React.FC = () => {
       if (Number.isNaN(date.getTime())) return false;
       const y = String(date.getFullYear());
 
-      if (mode === 'year') return y === year;
-      if (mode === 'category-year') return y === year && tx.categoryId === categoryId;
-      if (mode === 'all') return true;
-      if (mode === 'all-category') return tx.categoryId === categoryId;
-      if (mode === 'custom') {
-        const startOk = range.start ? new Date(range.start) <= date : true;
-        const endOk = range.end ? date <= new Date(range.end) : true;
-        return startOk && endOk;
-      }
-      return true;
+      const startOk = range.start ? new Date(range.start) <= date : true;
+      const endOk = range.end ? date <= new Date(range.end) : true;
+      return startOk && endOk;
     }).filter(tx => {
       if (selectedCategories.length && !selectedCategories.includes(tx.categoryId)) return false;
       if (selectedTags.length && !tx.tags?.some(t => selectedTags.includes(t))) return false;
@@ -95,7 +72,7 @@ const Reports: React.FC = () => {
       }
       return true;
     });
-  }, [transactions, mode, year, categoryId, range.start, range.end, selectedCategories, selectedTags, minAmount, maxAmount, keyword, currency, selectedCurrency]);
+  }, [transactions, range.start, range.end, selectedCategories, selectedTags, minAmount, maxAmount, keyword, currency, selectedCurrency]);
 
   const hasOtherCurrencies = useMemo(() => {
     return transactions.some((t) => {
@@ -143,7 +120,7 @@ const Reports: React.FC = () => {
   }, [pieData]);
 
   const applyPreset = (p: RangePreset) => {
-    setPreset(p);
+    if (p === 'custom') return;
     if (p === 'all') {
       setRange({ start: '', end: '' });
       return;
@@ -155,13 +132,6 @@ const Reports: React.FC = () => {
     if (p === 'this-month') {
       start.setDate(1);
       end.setMonth(end.getMonth() + 1, 0);
-    } else if (p === 'last-month') {
-      start.setMonth(start.getMonth() - 1, 1);
-      end.setMonth(end.getMonth(), 0);
-    } else if (p === 'this-quarter') {
-      const qStartMonth = Math.floor(now.getMonth() / 3) * 3;
-      start.setMonth(qStartMonth, 1);
-      end.setMonth(qStartMonth + 3, 0);
     } else if (p === 'this-year') {
       start.setMonth(0, 1);
       end.setMonth(12, 0);
@@ -169,8 +139,11 @@ const Reports: React.FC = () => {
 
     const toStr = (d: Date) => d.toISOString().split('T')[0];
     setRange({ start: toStr(start), end: toStr(end) });
-    setMode('custom');
   };
+
+  useEffect(() => {
+    applyPreset(preset);
+  }, [preset]);
 
   const seriesByPeriod = useMemo(() => {
     const bucket = new Map<string, { income: number; expense: number }>();
@@ -272,7 +245,7 @@ const Reports: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `report_${mode}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `report_${preset}_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -311,155 +284,18 @@ const Reports: React.FC = () => {
             ))}
           </select>
         </div>
-        {/* Mode selector */}
-        <div className="grid grid-cols-2 gap-2">
-          {([
-            { key: 'year', label: '年度報告' },
-            { key: 'category-year', label: '分類年度報告' },
-            { key: 'all', label: '全時段報告' },
-            { key: 'all-category', label: '全時段分類' },
-            { key: 'custom', label: '搜尋 / 自訂' },
-          ] as const).map(item => (
-            <button
-              key={item.key}
-              onClick={() => setMode(item.key)}
-              className={`p-3 rounded-xl text-sm transition-all ${mode === item.key ? 'bg-primary text-white shadow-lg' : 'sf-control text-gray-200'}`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filters (moved up) */}
-        <div className="sf-panel p-4 space-y-3">
-          <h3 className="text-sm text-gray-400">篩選</h3>
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="關鍵字（備註/標籤）"
-                className="flex-1 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
-              />
-              <input
-                type="number"
-                value={minAmount}
-                onChange={(e) => setMinAmount(e.target.value)}
-                placeholder="最小金額"
-                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
-              />
-              <input
-                type="number"
-                value={maxAmount}
-                onChange={(e) => setMaxAmount(e.target.value)}
-                placeholder="最大金額"
-                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {categories.map(cat => {
-                const active = selectedCategories.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategories(prev => prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id])}
-                    className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-300 hover:border-gray-500'}`}
-                  >
-                    {cat.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {allTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {allTags.map(tag => {
-                  const active = selectedTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                    className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-emerald-500 text-white border-emerald-500' : 'border-gray-700 text-gray-300 hover:border-gray-500'}`}
-                    >
-                      #{tag}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Quick presets for month/quarter/year */}
-          <div className="flex flex-wrap gap-2 text-xs">
-            {([
-              { key: 'this-month', label: '本月' },
-              { key: 'last-month', label: '上月' },
-              { key: 'this-quarter', label: '本季' },
-              { key: 'this-year', label: '今年' },
-              { key: 'all', label: '全期間' },
-            ] as const).map(item => (
-              <button
-                key={item.key}
-                onClick={() => applyPreset(item.key)}
-                className={`px-3 py-1 rounded-full border ${preset === item.key ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          {(mode === 'year' || mode === 'category-year') && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">年度</span>
-              <select
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-              >
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-          )}
-
-          {(mode === 'category-year' || mode === 'all-category') && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">分類</span>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-              >
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {mode === 'custom' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">開始日期</span>
-                <input
-                  type="date"
-                  value={range.start}
-                  onChange={(e) => setRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">結束日期</span>
-                <input
-                  type="date"
-                  value={range.end}
-                  onChange={(e) => setRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-          )}
+        <div className="sf-panel p-3 flex items-center justify-between">
+          <span className="text-xs text-gray-400">期間</span>
+          <select
+            value={preset}
+            onChange={(e) => setPreset(e.target.value as RangePreset)}
+            className="bg-transparent text-gray-200 focus:outline-none cursor-pointer text-sm"
+          >
+            <option value="this-month">本月</option>
+            <option value="this-year">今年</option>
+            <option value="all">全期間</option>
+            <option value="custom">自訂</option>
+          </select>
         </div>
 
         {/* Summary / KPI */}
@@ -512,10 +348,10 @@ const Reports: React.FC = () => {
             {budgetProgress >= 100 && <p className="text-xs text-red-400 mt-1">已超過預算，請留意開支</p>}
           </div>
           <button
-            onClick={exportCSV}
+            onClick={() => setShowAdvanced(v => !v)}
             className="w-full mt-2 sf-control rounded-lg py-2 text-sm flex items-center justify-center gap-2 hover:bg-background/80 transition-colors"
           >
-            <Download size={16} /> 匯出目前篩選結果 (CSV)
+            {showAdvanced ? '收起進階報告' : '展開進階報告'}
           </button>
         </div>
 
@@ -622,67 +458,161 @@ const Reports: React.FC = () => {
           </div>
         </div>
 
-        {/* Trend */}
-        <div className="sf-panel p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm text-gray-400">趨勢</h3>
-            <div className="flex gap-2 text-xs">
-              {(['month', 'quarter', 'year'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPeriodView(p)}
-                  className={`px-3 py-1 rounded-full border ${periodView === p ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
-                >
-                  {p === 'month' ? '月' : p === 'quarter' ? '季' : '年'}
-                </button>
-              ))}
-              <button
-                onClick={() => setTrendChartMode('bar')}
-                className={`px-3 py-1 rounded-full border ${trendChartMode === 'bar' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
-              >
-                <BarChart3 size={14} className="inline-block mr-1" /> 長條
-              </button>
-              <button
-                onClick={() => setTrendChartMode('line')}
-                className={`px-3 py-1 rounded-full border ${trendChartMode === 'line' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
-              >
-                <LineChart size={14} className="inline-block mr-1" /> 折線
-              </button>
-            </div>
-          </div>
-          {seriesByPeriod.length === 0 && <div className="text-center text-gray-500 text-sm py-6">尚無資料</div>}
-          {seriesByPeriod.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-4 text-xs text-gray-300">
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>收入</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span>支出</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-400 inline-block"></span>淨額</span>
-              </div>
-              {seriesByPeriod.map(item => {
-                const netVal = item.income - item.expense;
-                const maxVal = Math.max(...seriesByPeriod.map(i => Math.max(i.income, i.expense, Math.abs(i.income - i.expense))), 1);
-                const incW = Math.min(100, (item.income / maxVal) * 100);
-                const expW = Math.min(100, (item.expense / maxVal) * 100);
-                const netW = Math.min(100, (Math.abs(netVal) / maxVal) * 100);
-                return (
-                  <div key={item.key} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-gray-300">
-                      <span>{item.key}</span>
-                      <span>淨額 {currencySymbol} {(netVal).toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden flex">
-                      <div className="h-full bg-emerald-500" style={{ width: `${incW}%` }} title="收入"></div>
-                      <div className="h-full bg-red-500" style={{ width: `${expW}%` }} title="支出"></div>
-                    </div>
-                    <div className="w-full bg-gray-900 h-1 rounded-full overflow-hidden">
-                      <div className={`h-full ${netVal >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`} style={{ width: `${netW}%` }} />
-                    </div>
+        {showAdvanced && (
+          <>
+            <div className="sf-panel p-4 space-y-3">
+              <h3 className="text-sm text-gray-400">篩選</h3>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    placeholder="關鍵字（備註/標籤）"
+                    className="flex-1 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  />
+                  <input
+                    type="number"
+                    value={minAmount}
+                    onChange={(e) => setMinAmount(e.target.value)}
+                    placeholder="最小金額"
+                    className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  />
+                  <input
+                    type="number"
+                    value={maxAmount}
+                    onChange={(e) => setMaxAmount(e.target.value)}
+                    placeholder="最大金額"
+                    className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(cat => {
+                    const active = selectedCategories.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategories(prev => prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id])}
+                        className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-300 hover:border-gray-500'}`}
+                      >
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {allTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.map(tag => {
+                      const active = selectedTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                          className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-emerald-500 text-white border-emerald-500' : 'border-gray-700 text-gray-300 hover:border-gray-500'}`}
+                        >
+                          #{tag}
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                )}
+              </div>
+
+              {preset === 'custom' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">開始日期</span>
+                    <input
+                      type="date"
+                      value={range.start}
+                      onChange={(e) => setRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="sf-control text-white rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">結束日期</span>
+                    <input
+                      type="date"
+                      value={range.end}
+                      onChange={(e) => setRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="sf-control text-white rounded-lg px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+
+            <div className="sf-panel p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm text-gray-400">趨勢</h3>
+                <div className="flex gap-2 text-xs">
+                  {(['month', 'quarter', 'year'] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriodView(p)}
+                      className={`px-3 py-1 rounded-full border ${periodView === p ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
+                    >
+                      {p === 'month' ? '月' : p === 'quarter' ? '季' : '年'}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setTrendChartMode('bar')}
+                    className={`px-3 py-1 rounded-full border ${trendChartMode === 'bar' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
+                  >
+                    <BarChart3 size={14} className="inline-block mr-1" /> 長條
+                  </button>
+                  <button
+                    onClick={() => setTrendChartMode('line')}
+                    className={`px-3 py-1 rounded-full border ${trendChartMode === 'line' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
+                  >
+                    <LineChart size={14} className="inline-block mr-1" /> 折線
+                  </button>
+                </div>
+              </div>
+              {seriesByPeriod.length === 0 && <div className="text-center text-gray-500 text-sm py-6">尚無資料</div>}
+              {seriesByPeriod.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4 text-xs text-gray-300">
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>收入</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span>支出</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-400 inline-block"></span>淨額</span>
+                  </div>
+                  {seriesByPeriod.map(item => {
+                    const netVal = item.income - item.expense;
+                    const maxVal = Math.max(...seriesByPeriod.map(i => Math.max(i.income, i.expense, Math.abs(i.income - i.expense))), 1);
+                    const incW = Math.min(100, (item.income / maxVal) * 100);
+                    const expW = Math.min(100, (item.expense / maxVal) * 100);
+                    const netW = Math.min(100, (Math.abs(netVal) / maxVal) * 100);
+                    return (
+                      <div key={item.key} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs text-gray-300">
+                          <span>{item.key}</span>
+                          <span>淨額 {currencySymbol} {(netVal).toLocaleString()}</span>
+                        </div>
+                        <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden flex">
+                          <div className="h-full bg-emerald-500" style={{ width: `${incW}%` }} title="收入"></div>
+                          <div className="h-full bg-red-500" style={{ width: `${expW}%` }} title="支出"></div>
+                        </div>
+                        <div className="w-full bg-gray-900 h-1 rounded-full overflow-hidden">
+                          <div className={`h-full ${netVal >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`} style={{ width: `${netW}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={exportCSV}
+              className="w-full sf-control rounded-lg py-2 text-sm flex items-center justify-center gap-2 hover:bg-background/80 transition-colors"
+            >
+              <Download size={16} /> 匯出目前篩選結果 (CSV)
+            </button>
+          </>
+        )}
 
         {/* Top 5 */}
         <div className="sf-panel p-4 space-y-3">
