@@ -6,7 +6,8 @@ import { Currency, TransactionType } from '../types';
 import { getCurrencySymbol } from '../utils/currency';
 
 type ReportMode = 'year' | 'category-year' | 'all' | 'all-category' | 'custom';
-type ChartMode = 'pie' | 'bar' | 'line';
+type CategoryChartMode = 'pie' | 'bar';
+type TrendChartMode = 'bar' | 'line';
 type RangePreset = 'this-month' | 'last-month' | 'this-quarter' | 'this-year' | 'all';
 
 const Reports: React.FC = () => {
@@ -44,7 +45,8 @@ const Reports: React.FC = () => {
     start: '',
     end: ''
   });
-  const [chartMode, setChartMode] = useState<ChartMode>('bar');
+  const [categoryChartMode, setCategoryChartMode] = useState<CategoryChartMode>('bar');
+  const [trendChartMode, setTrendChartMode] = useState<TrendChartMode>('bar');
   const [preset, setPreset] = useState<RangePreset>('all');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -379,7 +381,7 @@ const Reports: React.FC = () => {
                     <button
                       key={tag}
                       onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                      className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-emerald-500 text-white border-emerald-500' : 'border-gray-700 text-gray-300 hover-border-gray-500'}`}
+                    className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-emerald-500 text-white border-emerald-500' : 'border-gray-700 text-gray-300 hover:border-gray-500'}`}
                     >
                       #{tag}
                     </button>
@@ -555,14 +557,14 @@ const Reports: React.FC = () => {
             <h3 className="text-sm text-gray-400">分類彙總</h3>
             <div className="flex gap-2 text-xs">
               <button
-                onClick={() => setChartMode('bar')}
-                className={`px-3 py-1 rounded-full border ${chartMode === 'bar' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
+                onClick={() => setCategoryChartMode('bar')}
+                className={`px-3 py-1 rounded-full border ${categoryChartMode === 'bar' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
               >
                 <BarChart3 size={14} className="inline-block mr-1" /> 長條
               </button>
               <button
-                onClick={() => setChartMode('pie')}
-                className={`px-3 py-1 rounded-full border ${chartMode === 'pie' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
+                onClick={() => setCategoryChartMode('pie')}
+                className={`px-3 py-1 rounded-full border ${categoryChartMode === 'pie' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
               >
                 <PieChart size={14} className="inline-block mr-1" /> 餅圖
               </button>
@@ -572,7 +574,7 @@ const Reports: React.FC = () => {
             {Object.entries(totals.byCategory).length === 0 && (
               <div className="text-center text-gray-500 text-sm py-6">尚無資料</div>
             )}
-            {chartMode === 'bar' && Object.entries(totals.byCategory).map(([catName, value]) => {
+            {categoryChartMode === 'bar' && Object.entries(totals.byCategory).map(([catName, value]) => {
               const totalAbs = Math.abs(value);
               const scale = Math.min(100, totalAbs / Math.max(1, Math.abs(totals.expense) + totals.income) * 100);
               return (
@@ -593,7 +595,7 @@ const Reports: React.FC = () => {
               );
             })}
 
-            {chartMode === 'pie' && (
+            {categoryChartMode === 'pie' && (
               <div className="space-y-4">
                 {pieData.length === 0 && <div className="text-center text-gray-500 text-sm py-4">無資料可顯示</div>}
                 {pieData.length > 0 && (
@@ -635,8 +637,14 @@ const Reports: React.FC = () => {
                 </button>
               ))}
               <button
-                onClick={() => setChartMode('line')}
-                className={`px-3 py-1 rounded-full border ${chartMode === 'line' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
+                onClick={() => setTrendChartMode('bar')}
+                className={`px-3 py-1 rounded-full border ${trendChartMode === 'bar' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
+              >
+                <BarChart3 size={14} className="inline-block mr-1" /> 長條
+              </button>
+              <button
+                onClick={() => setTrendChartMode('line')}
+                className={`px-3 py-1 rounded-full border ${trendChartMode === 'line' ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
               >
                 <LineChart size={14} className="inline-block mr-1" /> 折線
               </button>
@@ -704,137 +712,6 @@ const Reports: React.FC = () => {
           )}
         </div>
 
-        {/* Filters (placed after charts) */}
-        <div className="sf-panel p-4 space-y-3">
-          <h3 className="text-sm text-gray-400">篩選</h3>
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="關鍵字（備註/標籤）"
-                className="flex-1 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
-              />
-              <input
-                type="number"
-                value={minAmount}
-                onChange={(e) => setMinAmount(e.target.value)}
-                placeholder="最小金額"
-                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
-              />
-              <input
-                type="number"
-                value={maxAmount}
-                onChange={(e) => setMaxAmount(e.target.value)}
-                placeholder="最大金額"
-                className="w-28 sf-control text-white rounded-lg px-3 py-2 text-sm focus:outline-none"
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {categories.map(cat => {
-                const active = selectedCategories.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategories(prev => prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id])}
-                    className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-300 hover:border-gray-500'}`}
-                  >
-                    {cat.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {allTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {allTags.map(tag => {
-                  const active = selectedTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-                      className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-emerald-500 text-white border-emerald-500' : 'border-gray-700 text-gray-300 hover-border-gray-500'}`}
-                    >
-                      #{tag}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Quick presets for month/quarter/year */}
-          <div className="flex flex-wrap gap-2 text-xs">
-            {([
-              { key: 'this-month', label: '本月' },
-              { key: 'last-month', label: '上月' },
-              { key: 'this-quarter', label: '本季' },
-              { key: 'this-year', label: '今年' },
-              { key: 'all', label: '全期間' },
-            ] as const).map(item => (
-              <button
-                key={item.key}
-                onClick={() => applyPreset(item.key)}
-                className={`px-3 py-1 rounded-full border ${preset === item.key ? 'bg-primary text-white border-primary' : 'border-gray-700 text-gray-200'}`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          {(mode === 'year' || mode === 'category-year') && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">年度</span>
-              <select
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-              >
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-          )}
-
-          {(mode === 'category-year' || mode === 'all-category') && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">分類</span>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-              >
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {mode === 'custom' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">開始日期</span>
-                <input
-                  type="date"
-                  value={range.start}
-                  onChange={(e) => setRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">結束日期</span>
-                <input
-                  type="date"
-                  value={range.end}
-                  onChange={(e) => setRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="sf-control text-white rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
