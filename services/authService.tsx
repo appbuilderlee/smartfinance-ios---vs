@@ -14,8 +14,49 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+const USER_CACHE_KEY = 'smartfinance_cached_user';
+
+type CachedUser = {
+  uid: string;
+  email: string | null;
+  emailVerified: boolean;
+};
+
+const readCachedUser = (): User | null => {
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedUser;
+    if (!parsed?.uid) return null;
+    return {
+      uid: parsed.uid,
+      email: parsed.email,
+      emailVerified: parsed.emailVerified,
+    } as User;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedUser = (u: User | null) => {
+  try {
+    if (!u) {
+      localStorage.removeItem(USER_CACHE_KEY);
+      return;
+    }
+    const payload: CachedUser = {
+      uid: u.uid,
+      email: u.email,
+      emailVerified: u.emailVerified,
+    };
+    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore cache errors
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const cachedUser = auth.currentUser;
+  const cachedUser = auth.currentUser || readCachedUser();
   const [user, setUser] = useState<User | null>(cachedUser);
   const [loading, setLoading] = useState(!cachedUser);
 
@@ -24,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (!isMounted) return;
       setUser(u);
+      writeCachedUser(u);
       setLoading(false);
     }, (error) => {
       console.error("Auth state change error:", error);
@@ -78,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await signOut(auth);
+    writeCachedUser(null);
     setUser(null); // Ensure state clears for demo mode
   };
 
@@ -90,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       emailVerified: true,
     } as User;
     setUser(mockUser);
+    writeCachedUser(mockUser);
     setLoading(false);
   };
 
