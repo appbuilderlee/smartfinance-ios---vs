@@ -53,8 +53,6 @@ const Reports: React.FC = () => {
       if (txCurrency !== selectedCurrency) return false;
       const date = new Date(tx.date);
       if (Number.isNaN(date.getTime())) return false;
-      const y = String(date.getFullYear());
-
       const startOk = range.start ? new Date(range.start) <= date : true;
       const endOk = range.end ? date <= new Date(range.end) : true;
       return startOk && endOk;
