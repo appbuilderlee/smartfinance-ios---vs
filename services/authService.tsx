@@ -15,12 +15,25 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedUser = auth.currentUser;
+  const [user, setUser] = useState<User | null>(cachedUser);
+  const [loading, setLoading] = useState(!cachedUser);
 
   useEffect(() => {
-    // Try to set persistence to local, fallback if it fails (restricted env)
-    const initAuth = async () => {
+    let isMounted = true;
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (!isMounted) return;
+      setUser(u);
+      setLoading(false);
+    }, (error) => {
+      console.error("Auth state change error:", error);
+      if (!isMounted) return;
+      setLoading(false);
+    });
+
+    // Try to set persistence to local, fallback if it fails (restricted env).
+    // Don't block UI waiting for this.
+    const setAuthPersistence = async () => {
       try {
         await setPersistence(auth, browserLocalPersistence);
       } catch (err) {
@@ -32,19 +45,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await setPersistence(auth, inMemoryPersistence);
         }
       }
-
-      const unsubscribe = onAuthStateChanged(auth, (u) => {
-        setUser(u);
-        setLoading(false);
-      }, (error) => {
-        console.error("Auth state change error:", error);
-        setLoading(false);
-      });
-      return unsubscribe;
     };
+    setAuthPersistence();
 
-    const unsubPromise = initAuth();
-    return () => { unsubPromise.then(unsub => unsub && unsub()); };
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   // Wrappers to handle potential real firebase usage

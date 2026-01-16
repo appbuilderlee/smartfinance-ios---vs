@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, PlayCircle } from 'lucide-react';
 import { useAuth } from '../services/authService';
 
 const Welcome: React.FC = () => {
   const navigate = useNavigate();
-  const { demoLogin } = useAuth();
+  const { demoLogin, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleDemo = () => {
     demoLogin();
