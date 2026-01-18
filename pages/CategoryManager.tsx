@@ -86,6 +86,16 @@ const CategoryManager: React.FC = () => {
       }, 300);
    };
 
+   const handlePointerMove = (e: React.PointerEvent) => {
+      if (!draggingId) return;
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const card = target?.closest?.('[data-cat-id]') as HTMLElement | null;
+      const hoverId = card?.getAttribute('data-cat-id') || null;
+      if (!hoverId || hoverId === draggingId) return;
+      if (lastHoverIdRef.current === hoverId) return;
+      lastHoverIdRef.current = hoverId;
+      swapCategoryOrder(draggingId, hoverId);
+   };
    const handleDelete = (id: string, name: string) => {
       if (window.confirm(`確定要刪除「${name}」分類嗎？`)) {
          deleteCategory(id);
@@ -189,16 +199,16 @@ const CategoryManager: React.FC = () => {
             </div>
          </div>
 
-         <div className="px-4 space-y-3" onPointerUp={endDrag} onPointerCancel={endDrag}>
+         <div
+            className="px-4 space-y-3"
+            onPointerMove={handlePointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+         >
             {filteredCategories.map(cat => (
                <div
                   key={cat.id}
-                  onPointerEnter={() => {
-                     if (!draggingId || draggingId === cat.id) return;
-                     if (lastHoverIdRef.current === cat.id) return;
-                     lastHoverIdRef.current = cat.id;
-                     swapCategoryOrder(draggingId, cat.id);
-                  }}
+                  data-cat-id={cat.id}
                   className={`sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform ${draggingId === cat.id ? 'ring-1 ring-primary' : ''}`}
                >
                   <div className="flex items-center gap-4">

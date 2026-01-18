@@ -56,12 +56,13 @@ const AddSubscription: React.FC = () => {
     setIcon(target.icon || '');
   }, [isEdit, id, subscriptions]);
 
-  // Default to first expense category for quick entry
+  // Default to first expense category for quick entry (add only)
   useEffect(() => {
+    if (isEdit) return;
     if (categoryId) return;
     const firstExpense = categories.find(c => c.type === TransactionType.EXPENSE);
     if (firstExpense) setCategoryId(firstExpense.id);
-  }, [categories, categoryId]);
+  }, [categories, categoryId, isEdit]);
 
   const navigateBackToList = () => {
     if (returnTo === '/subscriptions' && window.history.length > 1) {
