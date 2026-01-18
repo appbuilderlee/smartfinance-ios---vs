@@ -9,6 +9,7 @@ export interface Category {
   icon: string;
   color: string;
   type: TransactionType;
+  order?: number;
 }
 
 export interface Transaction {
@@ -42,6 +43,8 @@ export interface Subscription {
   billingCycle: 'Monthly' | 'Yearly' | 'Weekly' | 'BiWeekly';
   nextBillingDate: string;
   autoRenewal?: boolean;
+  notify?: boolean;
+  daysBefore?: number;
   notes?: string;
   icon?: string;
   categoryId?: string;

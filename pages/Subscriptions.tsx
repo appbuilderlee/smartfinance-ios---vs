@@ -117,10 +117,16 @@ const Subscriptions: React.FC = () => {
                         <div className="text-right">
                            <p className="font-bold">{getCurrencySymbol(currency)} {sub.amount}</p>
                            <p className="text-xs text-gray-500">
-                              {sub.billingCycle === 'Weekly' ? '每週' : sub.billingCycle === 'Monthly' ? '每月' : '每年'}
+                              {sub.billingCycle === 'Weekly'
+                                 ? '每週'
+                                 : sub.billingCycle === 'BiWeekly'
+                                    ? '每2週'
+                                    : sub.billingCycle === 'Monthly'
+                                       ? '每月'
+                                       : '每年'}
                            </p>
                            <button
-                              onClick={() => navigate(`/subscriptions/${sub.id}/edit`, { state: { from: '/subscriptions' } })}
+                              onClick={() => navigate(`/subscriptions/${sub.id}/edit`, { state: { from: fromPath, returnTo: '/subscriptions' } })}
                               className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80"
                            >
                               <Pencil size={14} /> 編輯
@@ -132,7 +138,7 @@ const Subscriptions: React.FC = () => {
             </div>
 
             <button
-               onClick={() => navigate('/add-subscription', { state: { from: location.state?.from || '/subscriptions' } })}
+               onClick={() => navigate('/add-subscription', { state: { from: fromPath, returnTo: '/subscriptions' } })}
                className="fixed bottom-24 right-6 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg text-white active:scale-95 transition-transform"
             >
                <Plus size={30} />

@@ -36,6 +36,7 @@ const AddSubscription: React.FC = () => {
   const [categoryId, setCategoryId] = useState<string>('');
   const isEdit = Boolean(id);
   const [fromPath] = useState(() => (location.state as any)?.from || window.history.state?.usr?.from || '');
+  const [returnTo] = useState(() => (location.state as any)?.returnTo || '/subscriptions');
   const [icon, setIcon] = useState<string>('');
 
   // Prefill when editing
@@ -48,6 +49,8 @@ const AddSubscription: React.FC = () => {
     setCycle(target.billingCycle);
     setDate(target.nextBillingDate || '');
     setAutoRenewal(target.autoRenewal ?? true);
+    setNotify(target.notify ?? true);
+    setDaysBefore(String(target.daysBefore ?? 3));
     setNotes(target.notes || '');
     setCategoryId(target.categoryId || '');
     setIcon(target.icon || '');
@@ -66,6 +69,11 @@ const AddSubscription: React.FC = () => {
       return;
     }
 
+    if (!categoryId) {
+      alert("請選擇分類");
+      return;
+    }
+
     if (isEdit && id) {
       updateSubscription(id, {
         name,
@@ -73,6 +81,8 @@ const AddSubscription: React.FC = () => {
         billingCycle: cycle,
         nextBillingDate: date,
         autoRenewal,
+        notify,
+        daysBefore: Number(daysBefore) || 0,
         notes,
         categoryId,
         icon
@@ -84,41 +94,27 @@ const AddSubscription: React.FC = () => {
         billingCycle: cycle,
         nextBillingDate: date,
         autoRenewal,
+        notify,
+        daysBefore: Number(daysBefore) || 0,
         notes,
         categoryId,
         icon
       });
     }
 
-    if (fromPath) {
-      navigate(fromPath, { replace: true });
-    } else {
-      navigate('/subscriptions', { replace: true });
-    }
+    navigate(returnTo, { replace: true, state: { from: fromPath || '/settings' } });
   };
 
   const handleDelete = () => {
     if (!isEdit || !id) return;
     if (window.confirm('確定要刪除這筆訂閱嗎？')) {
       deleteSubscription(id);
-      if (fromPath) {
-        navigate(fromPath, { replace: true });
-      } else {
-        navigate('/subscriptions', { replace: true });
-      }
+      navigate(returnTo, { replace: true, state: { from: fromPath || '/settings' } });
     }
   };
 
   const handleBack = () => {
-    if (fromPath) {
-      navigate(fromPath, { replace: true });
-      return;
-    }
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/subscriptions', { replace: true });
-    }
+    navigate(returnTo, { replace: true, state: { from: fromPath || '/settings' } });
   };
 
   return (

@@ -32,10 +32,20 @@ const TransactionDetail: React.FC = () => {
    const transactionType = currentCategory?.type || tx.type;
 
    const handleSave = () => {
+      if (!date) {
+         alert('請選擇日期');
+         return;
+      }
+
+      if (!selectedCategory) {
+         alert('請選擇分類');
+         return;
+      }
+
       const localDate = new Date(date + 'T00:00:00');
       updateTransaction(tx.id, {
          amount: parseFloat(amount) || tx.amount,
-         categoryId: selectedCategory,
+         categoryId: selectedCategory || tx.categoryId,
          note,
          tags,
          receiptUrl,

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { Transaction, Category, Budget, Subscription, TransactionType, Currency } from '../types';
 import { MOCK_TRANSACTIONS, CATEGORIES, MOCK_BUDGETS, MOCK_SUBSCRIPTIONS } from '../constants';
 
@@ -17,6 +17,19 @@ export interface CreditCard {
 }
 
 export type ThemeName = string;
+
+const normalizeCategories = (cats: Category[]): Category[] => {
+  let maxOrder = cats.reduce((max, c) => {
+    const val = typeof c.order === 'number' ? c.order : -Infinity;
+    return Number.isFinite(val) ? Math.max(max, val) : max;
+  }, 0);
+
+  return cats.map((c) => {
+    if (typeof c.order === 'number') return c;
+    maxOrder += 1;
+    return { ...c, order: maxOrder };
+  });
+};
 
 interface DataContextType {
   transactions: Transaction[];
@@ -71,7 +84,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem('smartfinance_categories');
-    return saved ? JSON.parse(saved) : CATEGORIES;
+    const parsed = saved ? JSON.parse(saved) : CATEGORIES;
+    return normalizeCategories(parsed);
   });
 
   const [budgets, setBudgets] = useState<Budget[]>(() => {
@@ -208,7 +222,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addCategory = (cat: Category) => {
-    setCategories(prev => [...prev, cat]);
+    setCategories(prev => normalizeCategories([...prev, cat]));
     // Budget will be synced by the useEffect, but we can add it here optimistically if we want,
     // but the useEffect covering 'categories' change will handle it.
   };
@@ -382,10 +396,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [subscriptions, categories]);
 
+  const sortedCategories = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      const aOrder = typeof a.order === 'number' ? a.order : Number.MAX_SAFE_INTEGER;
+      const bOrder = typeof b.order === 'number' ? b.order : Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.name.localeCompare(b.name);
+    });
+  }, [categories]);
+
   return (
     <DataContext.Provider value={{
       transactions,
-      categories,
+      categories: sortedCategories,
       budgets,
       subscriptions,
       currency,

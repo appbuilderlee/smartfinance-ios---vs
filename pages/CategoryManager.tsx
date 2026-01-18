@@ -32,9 +32,11 @@ const CategoryManager: React.FC = () => {
    const [formData, setFormData] = useState({
       name: '',
       icon: 'Tag',
-      color: 'bg-gray-500'
+      color: 'bg-gray-500',
+      order: 1
    });
    const [iconTab, setIconTab] = useState<'icons' | 'emoji'>('icons');
+   const [customEmoji, setCustomEmoji] = useState('');
 
    const filteredCategories = categories.filter(c => c.type === activeTab);
 
@@ -45,14 +47,32 @@ const CategoryManager: React.FC = () => {
    };
 
    const openAddModal = () => {
+      const maxOrder = filteredCategories.reduce((max, c) => {
+         const val = typeof c.order === 'number' ? c.order : 0;
+         return Math.max(max, val);
+      }, 0);
       setEditingCategory(null);
-      setFormData({ name: '', icon: 'Tag', color: 'bg-gray-500' });
+      setFormData({ name: '', icon: 'Tag', color: 'bg-gray-500', order: maxOrder + 1 });
+      setIconTab('icons');
+      setCustomEmoji('');
       setShowModal(true);
    };
 
    const openEditModal = (cat: Category) => {
       setEditingCategory(cat);
-      setFormData({ name: cat.name, icon: cat.icon, color: cat.color });
+      setFormData({
+         name: cat.name,
+         icon: cat.icon,
+         color: cat.color,
+         order: typeof cat.order === 'number' ? cat.order : 1
+      });
+      if (cat.icon.startsWith('emoji:')) {
+         setIconTab('emoji');
+         setCustomEmoji(cat.icon.replace('emoji:', ''));
+      } else {
+         setIconTab('icons');
+         setCustomEmoji('');
+      }
       setShowModal(true);
    };
 
@@ -66,7 +86,8 @@ const CategoryManager: React.FC = () => {
          updateCategory(editingCategory.id, {
             name: formData.name,
             icon: formData.icon,
-            color: formData.color
+            color: formData.color,
+            order: formData.order
          });
       } else {
          addCategory({
@@ -74,7 +95,8 @@ const CategoryManager: React.FC = () => {
             name: formData.name,
             icon: formData.icon,
             color: formData.color,
-            type: activeTab
+            type: activeTab,
+            order: formData.order
          });
       }
       setShowModal(false);
@@ -187,16 +209,38 @@ const CategoryManager: React.FC = () => {
                               ))}
                            </div>
                         ) : (
-                           <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
-                              {AVAILABLE_EMOJIS.map(emoji => (
-                                 <button
-                                    key={emoji}
-                                    onClick={() => setFormData({ ...formData, icon: `emoji:${emoji}` })}
-                                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${formData.icon === `emoji:${emoji}` ? 'bg-primary' : 'sf-control'}`}
-                                 >
-                                    {emoji}
-                                 </button>
-                              ))}
+                           <div className="space-y-2">
+                              <div className="sf-control rounded-xl px-3 py-2">
+                                 <input
+                                    type="text"
+                                    inputMode="text"
+                                    value={customEmoji}
+                                    onChange={(e) => {
+                                       const value = e.target.value;
+                                       setCustomEmoji(value);
+                                       const trimmed = value.trim();
+                                       if (trimmed) {
+                                          setFormData({ ...formData, icon: `emoji:${trimmed}` });
+                                       }
+                                    }}
+                                    placeholder="輸入表情符號"
+                                    className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none text-sm"
+                                 />
+                              </div>
+                              <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
+                                 {AVAILABLE_EMOJIS.map(emoji => (
+                                    <button
+                                       key={emoji}
+                                       onClick={() => {
+                                          setCustomEmoji(emoji);
+                                          setFormData({ ...formData, icon: `emoji:${emoji}` });
+                                       }}
+                                       className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${formData.icon === `emoji:${emoji}` ? 'bg-primary' : 'sf-control'}`}
+                                    >
+                                       {emoji}
+                                    </button>
+                                 ))}
+                              </div>
                            </div>
                         )}
                      </div>
@@ -212,6 +256,21 @@ const CategoryManager: React.FC = () => {
                                     }`}
                               />
                            ))}
+                        </div>
+                     </div>
+
+                     <div>
+                        <label className="text-gray-400 text-sm mb-2 block">排列優先次序</label>
+                        <div className="sf-control rounded-xl px-4 py-3 flex items-center gap-3">
+                           <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={formData.order}
+                              onChange={(e) => setFormData({ ...formData, order: Math.max(1, Number(e.target.value || 1)) })}
+                              className="w-24 bg-transparent text-white focus:outline-none"
+                           />
+                           <span className="text-xs text-gray-500">數字越小越前</span>
                         </div>
                      </div>
 
