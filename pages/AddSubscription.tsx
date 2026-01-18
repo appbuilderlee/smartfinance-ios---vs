@@ -63,13 +63,27 @@ const AddSubscription: React.FC = () => {
     if (firstExpense) setCategoryId(firstExpense.id);
   }, [categories, categoryId]);
 
+  const navigateBackToList = () => {
+    if (returnTo === '/subscriptions' && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate(returnTo, { replace: true, state: { from: fromPath || '/settings' } });
+  };
+
   const handleSave = () => {
     if (!name || !amount) {
       alert("請輸入名稱與金額");
       return;
     }
 
-    if (!categoryId) {
+    const expenseCategories = categories.filter(c => c.type === TransactionType.EXPENSE);
+    const fallbackCategoryId = expenseCategories[0]?.id || '';
+    const existingCategoryId = isEdit ? subscriptions.find(s => s.id === id)?.categoryId || '' : '';
+    const isValidCategory = categoryId && expenseCategories.some(c => c.id === categoryId);
+    const finalCategoryId = isValidCategory ? categoryId : (existingCategoryId || fallbackCategoryId);
+
+    if (!finalCategoryId) {
       alert("請選擇分類");
       return;
     }
@@ -84,7 +98,7 @@ const AddSubscription: React.FC = () => {
         notify,
         daysBefore: Number(daysBefore) || 0,
         notes,
-        categoryId,
+        categoryId: finalCategoryId,
         icon
       });
     } else {
@@ -97,24 +111,24 @@ const AddSubscription: React.FC = () => {
         notify,
         daysBefore: Number(daysBefore) || 0,
         notes,
-        categoryId,
+        categoryId: finalCategoryId,
         icon
       });
     }
 
-    navigate(returnTo, { replace: true, state: { from: fromPath || '/settings' } });
+    navigateBackToList();
   };
 
   const handleDelete = () => {
     if (!isEdit || !id) return;
     if (window.confirm('確定要刪除這筆訂閱嗎？')) {
       deleteSubscription(id);
-      navigate(returnTo, { replace: true, state: { from: fromPath || '/settings' } });
+      navigateBackToList();
     }
   };
 
   const handleBack = () => {
-    navigate(returnTo, { replace: true, state: { from: fromPath || '/settings' } });
+    navigateBackToList();
   };
 
   return (

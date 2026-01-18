@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { ChevronLeft, ChevronUp, ChevronDown, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { Icon } from '../components/Icon';
 import { TransactionType, Category } from '../types';
@@ -29,6 +29,10 @@ const CategoryManager: React.FC = () => {
    const [activeTab, setActiveTab] = useState<TransactionType>(TransactionType.EXPENSE);
    const [showModal, setShowModal] = useState(false);
    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+   const [isReorderMode, setIsReorderMode] = useState(false);
+   const [draggingId, setDraggingId] = useState<string | null>(null);
+   const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+   const lastHoverIdRef = useRef<string | null>(null);
    const [formData, setFormData] = useState({
       name: '',
       icon: 'Tag',
@@ -39,6 +43,48 @@ const CategoryManager: React.FC = () => {
    const [customEmoji, setCustomEmoji] = useState('');
 
    const filteredCategories = categories.filter(c => c.type === activeTab);
+
+   const swapCategoryOrder = (firstId: string, secondId: string) => {
+      const list = filteredCategories;
+      const firstIdx = list.findIndex(c => c.id === firstId);
+      const secondIdx = list.findIndex(c => c.id === secondId);
+      if (firstIdx < 0 || secondIdx < 0) return;
+      const first = list[firstIdx];
+      const second = list[secondIdx];
+      const firstOrder = typeof first.order === 'number' ? first.order : firstIdx + 1;
+      const secondOrder = typeof second.order === 'number' ? second.order : secondIdx + 1;
+      updateCategory(first.id, { order: secondOrder });
+      updateCategory(second.id, { order: firstOrder });
+   };
+
+   const moveCategory = (id: string, direction: -1 | 1) => {
+      const list = filteredCategories;
+      const index = list.findIndex(c => c.id === id);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= list.length) return;
+      swapCategoryOrder(list[index].id, list[targetIndex].id);
+   };
+
+   const clearDragTimer = () => {
+      if (dragTimerRef.current) {
+         clearTimeout(dragTimerRef.current);
+         dragTimerRef.current = null;
+      }
+   };
+
+   const endDrag = () => {
+      clearDragTimer();
+      setDraggingId(null);
+      lastHoverIdRef.current = null;
+   };
+
+   const startLongPress = (id: string) => {
+      clearDragTimer();
+      dragTimerRef.current = setTimeout(() => {
+         setIsReorderMode(true);
+         setDraggingId(id);
+      }, 300);
+   };
 
    const handleDelete = (id: string, name: string) => {
       if (window.confirm(`確定要刪除「${name}」分類嗎？`)) {
@@ -109,7 +155,18 @@ const CategoryManager: React.FC = () => {
                <ChevronLeft size={24} />
             </button>
             <h2 className="text-lg font-semibold">分類管理</h2>
-            <button onClick={openAddModal} className="text-primary text-xl"><Plus /></button>
+            <div className="flex items-center gap-3">
+               <button
+                  onClick={() => {
+                     setIsReorderMode(v => !v);
+                     endDrag();
+                  }}
+                  className="text-primary text-sm"
+               >
+                  {isReorderMode ? '完成' : '編輯'}
+               </button>
+               <button onClick={openAddModal} className="text-primary text-xl"><Plus /></button>
+            </div>
          </div>
 
          {/* Tabs */}
@@ -132,18 +189,50 @@ const CategoryManager: React.FC = () => {
             </div>
          </div>
 
-         <div className="px-4 space-y-3">
+         <div className="px-4 space-y-3" onPointerUp={endDrag} onPointerCancel={endDrag}>
             {filteredCategories.map(cat => (
-               <div key={cat.id} className="sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform">
+               <div
+                  key={cat.id}
+                  onPointerEnter={() => {
+                     if (!draggingId || draggingId === cat.id) return;
+                     if (lastHoverIdRef.current === cat.id) return;
+                     lastHoverIdRef.current = cat.id;
+                     swapCategoryOrder(draggingId, cat.id);
+                  }}
+                  className={`sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform ${draggingId === cat.id ? 'ring-1 ring-primary' : ''}`}
+               >
                   <div className="flex items-center gap-4">
-                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${cat.color} text-white`}>
+                     <div
+                        onPointerDown={() => startLongPress(cat.id)}
+                        onPointerUp={clearDragTimer}
+                        onPointerLeave={clearDragTimer}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${cat.color} text-white ${isReorderMode ? 'cursor-move' : ''}`}
+                     >
                         {cat.icon.startsWith('emoji:')
                            ? <span className="text-lg">{cat.icon.replace('emoji:', '')}</span>
                            : <Icon name={cat.icon} size={20} />}
                      </div>
                      <span className="text-white font-medium">{cat.name}</span>
                   </div>
-                  <div className="flex gap-4 text-gray-400">
+                  <div className="flex gap-3 text-gray-400 items-center">
+                     {isReorderMode && (
+                        <>
+                           <button
+                              onClick={() => moveCategory(cat.id, -1)}
+                              className="hover:text-primary"
+                              aria-label="Move up"
+                           >
+                              <ChevronUp size={18} />
+                           </button>
+                           <button
+                              onClick={() => moveCategory(cat.id, 1)}
+                              className="hover:text-primary"
+                              aria-label="Move down"
+                           >
+                              <ChevronDown size={18} />
+                           </button>
+                        </>
+                     )}
                      <button onClick={() => openEditModal(cat)} className="hover:text-blue-400"><Edit2 size={20} /></button>
                      <button onClick={() => handleDelete(cat.id, cat.name)} className="hover:text-red-400"><Trash2 size={20} /></button>
                   </div>
