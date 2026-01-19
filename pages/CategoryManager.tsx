@@ -34,6 +34,7 @@ const CategoryManager: React.FC = () => {
    const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
    const listRef = useRef<HTMLDivElement | null>(null);
    const lastHoverIdRef = useRef<string | null>(null);
+   const [orderIds, setOrderIds] = useState<string[]>([]);
    const [formData, setFormData] = useState({
       name: '',
       icon: 'Tag',
@@ -44,15 +45,19 @@ const CategoryManager: React.FC = () => {
    const [customEmoji, setCustomEmoji] = useState('');
 
    const filteredCategories = categories.filter(c => c.type === activeTab);
+   const displayedCategories = orderIds.length
+      ? orderIds.map(id => filteredCategories.find(c => c.id === id)).filter(Boolean) as Category[]
+      : filteredCategories;
 
    const swapCategoryOrder = (firstId: string, secondId: string) => {
-      const list = filteredCategories;
-      const firstIdx = list.findIndex(c => c.id === firstId);
-      const secondIdx = list.findIndex(c => c.id === secondId);
-      if (firstIdx < 0 || secondIdx < 0) return;
-      const next = [...list];
-      [next[firstIdx], next[secondIdx]] = [next[secondIdx], next[firstIdx]];
-      reorderCategories(activeTab, next.map(c => c.id));
+      setOrderIds(prev => {
+         const base = prev.length ? [...prev] : filteredCategories.map(c => c.id);
+         const firstIdx = base.indexOf(firstId);
+         const secondIdx = base.indexOf(secondId);
+         if (firstIdx < 0 || secondIdx < 0) return base;
+         [base[firstIdx], base[secondIdx]] = [base[secondIdx], base[firstIdx]];
+         return base;
+      });
    };
 
    const clearDragTimer = () => {
@@ -64,6 +69,10 @@ const CategoryManager: React.FC = () => {
 
   const endDrag = () => {
     clearDragTimer();
+    if (orderIds.length) {
+      reorderCategories(activeTab, orderIds);
+      setOrderIds([]);
+    }
     setDraggingId(null);
     lastHoverIdRef.current = null;
   };
@@ -84,6 +93,11 @@ const CategoryManager: React.FC = () => {
       document.body.style.touchAction = prevTouchAction;
     };
   }, [draggingId]);
+
+   useEffect(() => {
+      if (draggingId) return;
+      setOrderIds(filteredCategories.map(c => c.id));
+   }, [filteredCategories, draggingId]);
 
    const startLongPress = (id: string, e?: React.PointerEvent) => {
       clearDragTimer();
@@ -238,7 +252,7 @@ const CategoryManager: React.FC = () => {
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
          >
-            {filteredCategories.map(cat => (
+            {displayedCategories.map(cat => (
                <div
                   key={cat.id}
                   data-cat-id={cat.id}

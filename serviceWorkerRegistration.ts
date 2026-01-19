@@ -67,6 +67,9 @@ function registerValidSW(swUrl: string, config?: Config) {
   navigator.serviceWorker
     .register(swUrl)
     .then((registration) => {
+      const emitUpdate = () => {
+        window.dispatchEvent(new CustomEvent('sf-sw-update', { detail: { registration } }));
+      };
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {
@@ -85,6 +88,7 @@ function registerValidSW(swUrl: string, config?: Config) {
               if (config && config.onUpdate) {
                 config.onUpdate(registration);
               }
+              emitUpdate();
             } else {
               // At this point, everything has been precached.
               // It's the perfect time to display a

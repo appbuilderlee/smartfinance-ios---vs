@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './services/authService';
 import { DataProvider } from './contexts/DataContext';
@@ -33,10 +33,54 @@ const ProtectedRoute = () => {
 };
 
 const App: React.FC = () => {
+  const [swUpdate, setSwUpdate] = useState<ServiceWorkerRegistration | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ registration: ServiceWorkerRegistration }>).detail;
+      if (detail?.registration) {
+        setSwUpdate(detail.registration);
+      }
+    };
+    window.addEventListener('sf-sw-update', handler as EventListener);
+    return () => window.removeEventListener('sf-sw-update', handler as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (!swUpdate || refreshing) return;
+    const onControllerChange = () => {
+      if (refreshing) return;
+      setRefreshing(true);
+      window.location.reload();
+    };
+    navigator.serviceWorker?.addEventListener('controllerchange', onControllerChange);
+    return () => navigator.serviceWorker?.removeEventListener('controllerchange', onControllerChange);
+  }, [swUpdate, refreshing]);
+
+  const handleReload = () => {
+    if (!swUpdate) return;
+    if (swUpdate.waiting) {
+      swUpdate.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+  };
+
   return (
     <AuthProvider>
       <DataProvider>
         <Router>
+          {swUpdate && (
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] sf-panel px-4 py-3 flex items-center gap-3">
+              <span className="text-sm text-gray-200">有新版本可用</span>
+              <button
+                type="button"
+                onClick={handleReload}
+                className="text-sm text-primary font-semibold"
+              >
+                重新載入
+              </button>
+            </div>
+          )}
           <Routes>
             {/* Public Routes */}
             <Route path="/welcome" element={<Welcome />} />
