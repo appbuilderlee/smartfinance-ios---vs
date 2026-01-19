@@ -23,6 +23,7 @@ export interface Transaction {
   receiptUrl?: string;
   tags?: string[];
   currency?: Currency; // Optional per-transaction currency; defaults to app currency
+  subscriptionId?: string;
 }
 
 export enum Currency {
@@ -43,8 +44,6 @@ export interface Subscription {
   billingCycle: 'Monthly' | 'Yearly' | 'Weekly' | 'BiWeekly';
   nextBillingDate: string;
   autoRenewal?: boolean;
-  notify?: boolean;
-  daysBefore?: number;
   notes?: string;
   icon?: string;
   categoryId?: string;

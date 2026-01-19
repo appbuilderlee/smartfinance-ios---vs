@@ -378,9 +378,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           categoryId,
           type: TransactionType.EXPENSE,
           isRecurring: true,
+          subscriptionId: sub.id,
           tags: ['subscription']
         };
-        newTransactions.push(tx);
+        const alreadyExists = transactions.some(t => {
+          if (t.subscriptionId && t.subscriptionId === sub.id) {
+            return t.date.split('T')[0] === dueStr;
+          }
+          return t.date.split('T')[0] === dueStr &&
+            t.amount === sub.amount &&
+            t.note === `訂閱：${sub.name}`;
+        });
+        if (!alreadyExists) {
+          newTransactions.push(tx);
+        }
         processed = true;
 
         if (sub.autoRenewal === false) {

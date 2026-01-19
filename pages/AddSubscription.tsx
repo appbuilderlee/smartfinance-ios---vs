@@ -31,8 +31,6 @@ const AddSubscription: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [cycle, setCycle] = useState<'Monthly' | 'Yearly' | 'Weekly' | 'BiWeekly'>('Monthly');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [notify, setNotify] = useState(true);
-  const [daysBefore, setDaysBefore] = useState('3');
   const [autoRenewal, setAutoRenewal] = useState(true);
   const [notes, setNotes] = useState('');
   const [categoryId, setCategoryId] = useState<string>('');
@@ -53,8 +51,6 @@ const AddSubscription: React.FC = () => {
     setCycle(target.billingCycle);
     setDate(target.nextBillingDate || '');
     setAutoRenewal(target.autoRenewal ?? true);
-    setNotify(target.notify ?? true);
-    setDaysBefore(String(target.daysBefore ?? 3));
     setNotes(target.notes || '');
     setCategoryId(target.categoryId || '');
     setIcon(target.icon || '');
@@ -107,8 +103,6 @@ const AddSubscription: React.FC = () => {
         billingCycle: cycle,
         nextBillingDate: date,
         autoRenewal,
-        notify,
-        daysBefore: Number(daysBefore) || 0,
         notes,
         categoryId: finalCategoryId,
         icon
@@ -120,8 +114,6 @@ const AddSubscription: React.FC = () => {
         billingCycle: cycle,
         nextBillingDate: date,
         autoRenewal,
-        notify,
-        daysBefore: Number(daysBefore) || 0,
         notes,
         categoryId: finalCategoryId,
         icon
@@ -342,31 +334,6 @@ const AddSubscription: React.FC = () => {
             <div className={`w-6 h-6 bg-white rounded-full absolute top-0.5 shadow-md transition-all ${autoRenewal ? 'translate-x-5' : 'translate-x-0.5'}`}></div>
           </div>
         </div>
-
-        {/* Notification Toggle */}
-        <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
-          <span className="text-white">扣款前通知</span>
-          <div
-            onClick={() => setNotify(!notify)}
-            className={`w-12 h-7 rounded-full relative cursor-pointer transition-colors ${notify ? 'bg-green-500' : 'bg-gray-600'}`}
-          >
-            <div className={`w-6 h-6 bg-white rounded-full absolute top-0.5 shadow-md transition-all ${notify ? 'translate-x-5' : 'translate-x-0.5'}`}></div>
-          </div>
-        </div>
-
-        {/* Reminder Time */}
-        {notify && (
-          <div className="animate-fade-in-down">
-            <label className="text-gray-400 text-xs ml-1 mb-2 block">提醒時間</label>
-            <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
-              <span className="text-white">提前 {daysBefore} 天</span>
-              <div className="flex gap-2">
-                <button onClick={() => setDaysBefore(String(Math.max(1, parseInt(daysBefore) - 1)))} className="w-6 h-6 bg-gray-600 rounded flex items-center justify-center">-</button>
-                <button onClick={() => setDaysBefore(String(parseInt(daysBefore) + 1))} className="w-6 h-6 bg-gray-600 rounded flex items-center justify-center">+</button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <button
           onClick={handleSave}

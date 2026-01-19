@@ -36,15 +36,27 @@ const AddTransaction: React.FC = () => {
   const [showDetails, setShowDetails] = useState(false);
 
   const handleSave = () => {
-    if (!amount || !selectedCategory) {
-      alert("請輸入金額並選擇分類");
+    const amountValue = Number(amount);
+    if (!selectedCategory) {
+      alert("請選擇分類");
+      return;
+    }
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      alert("請輸入有效金額");
+      return;
+    }
+    if (!date) {
+      alert("請選擇日期");
+      return;
+    }
+    const localDate = new Date(date + 'T00:00:00');
+    if (Number.isNaN(localDate.getTime())) {
+      alert("日期格式不正確");
       return;
     }
 
-    const localDate = new Date(date + 'T00:00:00');
-
     addTransaction({
-      amount: parseFloat(amount),
+      amount: amountValue,
       categoryId: selectedCategory,
       note: note,
       date: localDate.toISOString(),
