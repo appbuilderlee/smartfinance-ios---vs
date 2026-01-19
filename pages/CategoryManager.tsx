@@ -32,6 +32,7 @@ const CategoryManager: React.FC = () => {
    const [isReorderMode, setIsReorderMode] = useState(false);
    const [draggingId, setDraggingId] = useState<string | null>(null);
    const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+   const listRef = useRef<HTMLDivElement | null>(null);
    const lastHoverIdRef = useRef<string | null>(null);
    const [formData, setFormData] = useState({
       name: '',
@@ -78,16 +79,41 @@ const CategoryManager: React.FC = () => {
       lastHoverIdRef.current = null;
    };
 
-   const startLongPress = (id: string) => {
+   const startLongPress = (id: string, e?: React.PointerEvent) => {
       clearDragTimer();
       dragTimerRef.current = setTimeout(() => {
          setIsReorderMode(true);
          setDraggingId(id);
+         if (e?.currentTarget && 'setPointerCapture' in e.currentTarget) {
+            e.currentTarget.setPointerCapture(e.pointerId);
+         }
       }, 300);
+   };
+
+   const startDragImmediate = (id: string, e: React.PointerEvent) => {
+      clearDragTimer();
+      setIsReorderMode(true);
+      setDraggingId(id);
+      if ('setPointerCapture' in e.currentTarget) {
+         e.currentTarget.setPointerCapture(e.pointerId);
+      }
    };
 
    const handlePointerMove = (e: React.PointerEvent) => {
       if (!draggingId) return;
+      e.preventDefault();
+      if (listRef.current) {
+         const rect = listRef.current.getBoundingClientRect();
+         const edgeThreshold = 48;
+         const maxSpeed = 12;
+         if (e.clientY < rect.top + edgeThreshold) {
+            const strength = 1 - (e.clientY - rect.top) / edgeThreshold;
+            listRef.current.scrollTop -= Math.ceil(maxSpeed * strength);
+         } else if (e.clientY > rect.bottom - edgeThreshold) {
+            const strength = 1 - (rect.bottom - e.clientY) / edgeThreshold;
+            listRef.current.scrollTop += Math.ceil(maxSpeed * strength);
+         }
+      }
       const target = document.elementFromPoint(e.clientX, e.clientY);
       const card = target?.closest?.('[data-cat-id]') as HTMLElement | null;
       const hoverId = card?.getAttribute('data-cat-id') || null;
@@ -200,7 +226,8 @@ const CategoryManager: React.FC = () => {
          </div>
 
          <div
-            className="px-4 space-y-3"
+            ref={listRef}
+            className={`px-4 space-y-3 overflow-y-auto ${draggingId ? 'touch-none' : ''}`}
             onPointerMove={handlePointerMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
@@ -213,7 +240,7 @@ const CategoryManager: React.FC = () => {
                >
                   <div className="flex items-center gap-4">
                      <div
-                        onPointerDown={() => startLongPress(cat.id)}
+                        onPointerDown={(e) => startLongPress(cat.id, e)}
                         onPointerUp={clearDragTimer}
                         onPointerLeave={clearDragTimer}
                         className={`w-10 h-10 rounded-full flex items-center justify-center ${cat.color} text-white ${isReorderMode ? 'cursor-move' : ''}`}
@@ -228,12 +255,12 @@ const CategoryManager: React.FC = () => {
                      {isReorderMode && (
                         <>
                            <button
-                              onPointerDown={() => startLongPress(cat.id)}
+                              onPointerDown={(e) => startDragImmediate(cat.id, e)}
                               onPointerUp={clearDragTimer}
                               onPointerLeave={clearDragTimer}
                               className="text-gray-500 hover:text-gray-300 cursor-move"
                               aria-label="Drag"
-                           >
+                            >
                               <GripVertical size={18} />
                            </button>
                            <button
@@ -364,21 +391,6 @@ const CategoryManager: React.FC = () => {
                                     }`}
                               />
                            ))}
-                        </div>
-                     </div>
-
-                     <div>
-                        <label className="text-gray-400 text-sm mb-2 block">排列優先次序</label>
-                        <div className="sf-control rounded-xl px-4 py-3 flex items-center gap-3">
-                           <input
-                              type="number"
-                              min={1}
-                              step={1}
-                              value={formData.order}
-                              onChange={(e) => setFormData({ ...formData, order: Math.max(1, Number(e.target.value || 1)) })}
-                              className="w-24 bg-transparent text-white focus:outline-none"
-                           />
-                           <span className="text-xs text-gray-500">數字越小越前</span>
                         </div>
                      </div>
 
