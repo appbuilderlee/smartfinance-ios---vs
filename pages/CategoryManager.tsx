@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronUp, ChevronDown, GripVertical, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { ChevronLeft, GripVertical, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { Icon } from '../components/Icon';
 import { TransactionType, Category } from '../types';
@@ -52,16 +52,6 @@ const CategoryManager: React.FC = () => {
       if (firstIdx < 0 || secondIdx < 0) return;
       const next = [...list];
       [next[firstIdx], next[secondIdx]] = [next[secondIdx], next[firstIdx]];
-      reorderCategories(activeTab, next.map(c => c.id));
-   };
-
-   const moveCategory = (id: string, direction: -1 | 1) => {
-      const list = filteredCategories;
-      const index = list.findIndex(c => c.id === id);
-      const targetIndex = index + direction;
-      if (index < 0 || targetIndex < 0 || targetIndex >= list.length) return;
-      const next = [...list];
-      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
       reorderCategories(activeTab, next.map(c => c.id));
    };
 
@@ -279,24 +269,6 @@ const CategoryManager: React.FC = () => {
                      <span className="text-white font-medium">{cat.name}</span>
                   </div>
                   <div className="flex gap-2 text-gray-400 items-center">
-                     {isReorderMode && (
-                        <>
-                           <button
-                              onClick={() => moveCategory(cat.id, -1)}
-                              className="hover:text-primary"
-                              aria-label="Move up"
-                            >
-                              <ChevronUp size={18} />
-                           </button>
-                           <button
-                              onClick={() => moveCategory(cat.id, 1)}
-                              className="hover:text-primary"
-                              aria-label="Move down"
-                           >
-                              <ChevronDown size={18} />
-                           </button>
-                        </>
-                     )}
                      <button onClick={() => openEditModal(cat)} className="hover:text-blue-400"><Edit2 size={20} /></button>
                      <button onClick={() => handleDelete(cat.id, cat.name)} className="hover:text-red-400"><Trash2 size={20} /></button>
                   </div>
