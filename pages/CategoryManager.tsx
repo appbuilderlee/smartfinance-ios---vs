@@ -252,9 +252,20 @@ const CategoryManager: React.FC = () => {
                <div
                   key={cat.id}
                   data-cat-id={cat.id}
-                  className={`sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform ${draggingId === cat.id ? 'ring-2 ring-primary shadow-lg scale-[1.02] bg-surface/70' : ''}`}
+                  className={`sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform ${draggingId === cat.id ? 'ring-2 ring-primary shadow-xl scale-[1.04] bg-surface/80' : ''}`}
                >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                     {isReorderMode && (
+                        <button
+                           onPointerDown={(e) => startDragImmediate(cat.id, e)}
+                           onPointerUp={clearDragTimer}
+                           onPointerLeave={clearDragTimer}
+                           className={`text-gray-500 hover:text-gray-300 cursor-move ${draggingId === cat.id ? 'text-primary' : ''}`}
+                           aria-label="Drag"
+                        >
+                           <GripVertical size={18} />
+                        </button>
+                     )}
                      <div
                         onPointerDown={(e) => startLongPress(cat.id, e)}
                         onPointerUp={clearDragTimer}
@@ -271,19 +282,10 @@ const CategoryManager: React.FC = () => {
                      {isReorderMode && (
                         <>
                            <button
-                              onPointerDown={(e) => startDragImmediate(cat.id, e)}
-                              onPointerUp={clearDragTimer}
-                              onPointerLeave={clearDragTimer}
-                              className="text-gray-500 hover:text-gray-300 cursor-move"
-                              aria-label="Drag"
-                            >
-                              <GripVertical size={18} />
-                           </button>
-                           <button
                               onClick={() => moveCategory(cat.id, -1)}
                               className="hover:text-primary"
                               aria-label="Move up"
-                           >
+                            >
                               <ChevronUp size={18} />
                            </button>
                            <button
