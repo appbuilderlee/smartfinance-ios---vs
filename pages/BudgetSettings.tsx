@@ -48,6 +48,11 @@ const BudgetSettings: React.FC = () => {
 
         {/* Category Sliders */}
         <div className="space-y-6">
+          {categories.filter(c => c.type === 'EXPENSE').some(c => !budgets.find(b => b.categoryId === c.id)) && (
+            <div className="sf-panel p-3 text-xs text-gray-300">
+              偵測到新分類尚未同步到預算，請稍後或重新開啟本頁。
+            </div>
+          )}
           {budgets.map((budget) => {
             const cat = categories.find(c => c.id === budget.categoryId);
             if (!cat) return null;

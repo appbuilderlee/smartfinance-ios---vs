@@ -19,16 +19,16 @@ export interface CreditCard {
 export type ThemeName = string;
 
 const normalizeCategories = (cats: Category[]): Category[] => {
-  let maxOrder = cats.reduce((max, c) => {
-    const val = typeof c.order === 'number' ? c.order : -Infinity;
-    return Number.isFinite(val) ? Math.max(max, val) : max;
-  }, 0);
-
-  return cats.map((c) => {
-    if (typeof c.order === 'number') return c;
-    maxOrder += 1;
-    return { ...c, order: maxOrder };
+  const sorted = [...cats].sort((a, b) => {
+    const aOrder = typeof a.order === 'number' ? a.order : Number.MAX_SAFE_INTEGER;
+    const bOrder = typeof b.order === 'number' ? b.order : Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    const nameCompare = a.name.localeCompare(b.name);
+    if (nameCompare !== 0) return nameCompare;
+    return a.id.localeCompare(b.id);
   });
+
+  return sorted.map((c, idx) => ({ ...c, order: idx + 1 }));
 };
 
 interface DataContextType {

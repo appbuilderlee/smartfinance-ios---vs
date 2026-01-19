@@ -69,7 +69,7 @@ const Subscriptions: React.FC = () => {
 
          <div className="p-4 space-y-6">
             <div className="text-center mb-6">
-               <p className="text-gray-400 text-sm">每月總計 (估算)</p>
+               <p className="text-gray-400 text-sm">每月總計 (估算，依週期換算)</p>
                <h1 className="text-4xl font-bold mt-1">{getCurrencySymbol(currency)} {Math.round(totalMonthly).toLocaleString()}</h1>
             </div>
 
@@ -118,12 +118,12 @@ const Subscriptions: React.FC = () => {
                            <p className="font-bold">{getCurrencySymbol(currency)} {sub.amount}</p>
                            <p className="text-xs text-gray-500">
                               {sub.billingCycle === 'Weekly'
-                                 ? '每週'
+                                 ? '每週（約每月×4）'
                                  : sub.billingCycle === 'BiWeekly'
-                                    ? '每2週'
+                                    ? '每2週（約每月×2）'
                                     : sub.billingCycle === 'Monthly'
                                        ? '每月'
-                                       : '每年'}
+                                       : '每年（約每月÷12）'}
                            </p>
                            <button
                               onClick={() => navigate(`/subscriptions/${sub.id}/edit`, { state: { from: fromPath, returnTo: '/subscriptions' } })}
