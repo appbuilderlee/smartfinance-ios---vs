@@ -32,19 +32,26 @@ const TransactionDetail: React.FC = () => {
    const transactionType = currentCategory?.type || tx.type;
 
    const handleSave = () => {
-      if (!date) {
-         alert('請選擇日期');
-         return;
-      }
-
+      const amountValue = Number(amount);
       if (!selectedCategory) {
          alert('請選擇分類');
          return;
       }
-
+      if (!Number.isFinite(amountValue) || amountValue <= 0) {
+         alert('請輸入有效金額');
+         return;
+      }
+      if (!date) {
+         alert('請選擇日期');
+         return;
+      }
       const localDate = new Date(date + 'T00:00:00');
+      if (Number.isNaN(localDate.getTime())) {
+         alert('日期格式不正確');
+         return;
+      }
       updateTransaction(tx.id, {
-         amount: parseFloat(amount) || tx.amount,
+         amount: amountValue,
          categoryId: selectedCategory || tx.categoryId,
          note,
          tags,

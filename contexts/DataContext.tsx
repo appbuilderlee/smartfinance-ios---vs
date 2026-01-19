@@ -333,7 +333,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!subscriptions.length) return;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const localToday = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+    const todayStr = localToday.toISOString().split('T')[0];
 
     const addCycle = (date: Date, cycle: Subscription['billingCycle']) => {
       const d = new Date(date);
@@ -363,13 +365,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let nextDate = parsed;
       let iterations = 0;
       let processed = false;
+      let lastProcessed = sub.lastProcessedDate || '';
 
       while (nextDate.toISOString().split('T')[0] <= todayStr && iterations < 24) {
-        if (sub.lastProcessedDate === todayStr) break; // already processed today
+        const dueStr = nextDate.toISOString().split('T')[0];
+        if (lastProcessed && lastProcessed >= dueStr) {
+          // already processed this due date (or later)
+          nextDate = new Date(addCycle(nextDate, sub.billingCycle));
+          iterations += 1;
+          continue;
+        }
 
         const categoryId = pickCategoryId(sub);
-        const dueStr = nextDate.toISOString().split('T')[0];
-
         const tx: Transaction = {
           id: Math.random().toString(36).substr(2, 9),
           amount: sub.amount,
@@ -393,6 +400,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           newTransactions.push(tx);
         }
         processed = true;
+        lastProcessed = dueStr;
 
         if (sub.autoRenewal === false) {
           // Stop after one-time posting when不自動續訂
@@ -407,7 +415,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (processed) {
         changed = true;
         const nextBilling = sub.autoRenewal === false ? '' : nextDate.toISOString().split('T')[0];
-        return { ...sub, nextBillingDate: nextBilling, lastProcessedDate: todayStr };
+        return { ...sub, nextBillingDate: nextBilling, lastProcessedDate: lastProcessed || todayStr };
       }
 
       return sub;
