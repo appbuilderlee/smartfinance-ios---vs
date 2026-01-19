@@ -221,7 +221,9 @@ const AddSubscription: React.FC = () => {
 
         {/* Date */}
         <div>
-          <label className="text-gray-400 text-xs ml-1 mb-2 block">首次扣款日期</label>
+          <label className="text-gray-400 text-xs ml-1 mb-2 block">
+            {isEdit ? '下一次扣款日期' : '首次扣款日期'}
+          </label>
           <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center cursor-pointer">
             <input
               type="date"
