@@ -164,7 +164,7 @@ const AddTransaction: React.FC = () => {
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="w-full sf-control rounded-xl p-4 text-white focus:outline-none"
+            className="w-full sf-control rounded-xl px-4 py-3 text-white focus:outline-none"
           />
         </div>
 
@@ -175,11 +175,11 @@ const AddTransaction: React.FC = () => {
             onClick={() => setShowDetails(v => !v)}
             className="w-full sf-panel rounded-xl px-4 py-4 flex items-center justify-between text-base text-gray-200 hover:bg-surface/80 transition-colors"
           >
-            <div className="flex items-center gap-2">
-              <span className="font-medium">詳細資訊</span>
-              <span className="text-xs text-gray-500">{showDetails ? '收起' : '展開'}</span>
-            </div>
-            {showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            <span className="font-medium">詳細資訊</span>
+            <span className="flex items-center gap-2 text-xs text-gray-500">
+              {showDetails ? '收起' : '展開'}
+              {showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </span>
           </button>
 
           {showDetails && (
