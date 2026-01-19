@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronUp, ChevronDown, GripVertical, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
@@ -73,11 +73,28 @@ const CategoryManager: React.FC = () => {
       }
    };
 
-   const endDrag = () => {
-      clearDragTimer();
-      setDraggingId(null);
-      lastHoverIdRef.current = null;
-   };
+  const endDrag = () => {
+    clearDragTimer();
+    setDraggingId(null);
+    lastHoverIdRef.current = null;
+  };
+
+  useEffect(() => {
+    if (!draggingId) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    const preventScroll = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('touchmove', preventScroll, { passive: false });
+    return () => {
+      window.removeEventListener('touchmove', preventScroll);
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouchAction;
+    };
+  }, [draggingId]);
 
    const startLongPress = (id: string, e?: React.PointerEvent) => {
       clearDragTimer();
