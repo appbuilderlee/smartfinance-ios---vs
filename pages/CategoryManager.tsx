@@ -25,7 +25,7 @@ const AVAILABLE_EMOJIS = [
 
 const CategoryManager: React.FC = () => {
    const navigate = useNavigate();
-   const { categories, deleteCategory, addCategory, updateCategory } = useData();
+   const { categories, deleteCategory, addCategory, updateCategory, reorderCategories } = useData();
    const [activeTab, setActiveTab] = useState<TransactionType>(TransactionType.EXPENSE);
    const [showModal, setShowModal] = useState(false);
    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -50,12 +50,9 @@ const CategoryManager: React.FC = () => {
       const firstIdx = list.findIndex(c => c.id === firstId);
       const secondIdx = list.findIndex(c => c.id === secondId);
       if (firstIdx < 0 || secondIdx < 0) return;
-      const first = list[firstIdx];
-      const second = list[secondIdx];
-      const firstOrder = typeof first.order === 'number' ? first.order : firstIdx + 1;
-      const secondOrder = typeof second.order === 'number' ? second.order : secondIdx + 1;
-      updateCategory(first.id, { order: secondOrder });
-      updateCategory(second.id, { order: firstOrder });
+      const next = [...list];
+      [next[firstIdx], next[secondIdx]] = [next[secondIdx], next[firstIdx]];
+      reorderCategories(activeTab, next.map(c => c.id));
    };
 
    const moveCategory = (id: string, direction: -1 | 1) => {
@@ -63,7 +60,9 @@ const CategoryManager: React.FC = () => {
       const index = list.findIndex(c => c.id === id);
       const targetIndex = index + direction;
       if (index < 0 || targetIndex < 0 || targetIndex >= list.length) return;
-      swapCategoryOrder(list[index].id, list[targetIndex].id);
+      const next = [...list];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      reorderCategories(activeTab, next.map(c => c.id));
    };
 
    const clearDragTimer = () => {
@@ -253,7 +252,7 @@ const CategoryManager: React.FC = () => {
                <div
                   key={cat.id}
                   data-cat-id={cat.id}
-                  className={`sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform ${draggingId === cat.id ? 'ring-1 ring-primary' : ''}`}
+                  className={`sf-panel rounded-xl p-4 flex items-center justify-between group active:scale-[0.99] transition-transform ${draggingId === cat.id ? 'ring-2 ring-primary shadow-lg scale-[1.02] bg-surface/70' : ''}`}
                >
                   <div className="flex items-center gap-4">
                      <div

@@ -52,6 +52,7 @@ interface DataContextType {
   deleteCategory: (id: string) => void;
   addCategory: (cat: Category) => void;
   updateCategory: (id: string, updates: Partial<Category>) => void;
+  reorderCategories: (type: TransactionType, orderedIds: string[]) => void;
   setCurrency: (c: Currency) => void;
   addCreditCard: (card: CreditCard) => void;
   deleteCreditCard: (id: string) => void;
@@ -229,6 +230,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateCategory = (id: string, updates: Partial<Category>) => {
     setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  };
+
+  const reorderCategories = (type: TransactionType, orderedIds: string[]) => {
+    const orderMap = new Map<string, number>();
+    orderedIds.forEach((id, idx) => {
+      orderMap.set(id, idx + 1);
+    });
+    setCategories(prev => prev.map(c => {
+      if (c.type !== type) return c;
+      const nextOrder = orderMap.get(c.id);
+      if (!nextOrder) return c;
+      return { ...c, order: nextOrder };
+    }));
   };
 
   const addCreditCard = (card: CreditCard) => {
@@ -421,6 +435,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addCategory,
       deleteCategory,
       updateCategory,
+      reorderCategories,
   addBudget,
   deleteBudget,
   updateBudget,
