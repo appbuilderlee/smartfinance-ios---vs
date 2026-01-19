@@ -10,7 +10,6 @@ const Settings: React.FC = () => {
    const navigate = useNavigate();
    const { logout, user } = useAuth();
    const { resetData, transactions, categories, budgets, subscriptions, currency, setCurrency, themeColor, setThemeColor, creditCards } = useData();
-   const [biometricEnabled, setBiometricEnabled] = useState(true);
    const fileInputRef = useRef<HTMLInputElement>(null);
    const csvInputRef = useRef<HTMLInputElement>(null);
 
@@ -604,14 +603,6 @@ const Settings: React.FC = () => {
          <div>
             <h3 className="text-gray-500 text-xs ml-3 mb-2 uppercase tracking-wider">帳戶與安全</h3>
             <div className="sf-panel overflow-hidden divide-y sf-divider">
-               <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setBiometricEnabled(!biometricEnabled)}>
-                  <span className="text-white">生物辨識解鎖</span>
-                  <div
-                     className={`w-12 h-7 rounded-full relative transition-colors duration-300 ${biometricEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
-                  >
-                     <div className={`w-6 h-6 bg-white rounded-full absolute top-0.5 shadow-md transition-transform duration-300 ${biometricEnabled ? 'translate-x-5' : 'translate-x-0.5'}`}></div>
-                  </div>
-               </div>
                <div className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-3">
                      <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">

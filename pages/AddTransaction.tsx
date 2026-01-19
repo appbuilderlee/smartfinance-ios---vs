@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Camera, X, Tag, CircleDollarSign, CalendarDays, BarChart3, List, Settings } from 'lucide-react';
+import { Plus, Camera, X, Tag, CircleDollarSign, CalendarDays, BarChart3, List, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { Icon } from '../components/Icon';
 import NumPad from '../components/NumPad';
@@ -157,30 +157,33 @@ const AddTransaction: React.FC = () => {
           </div>
         </div>
 
+        {/* Date */}
+        <div>
+          <h3 className="text-gray-400 text-sm mb-2 ml-1">日期</h3>
+          <input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            className="w-full sf-control rounded-xl p-4 text-white focus:outline-none"
+          />
+        </div>
+
         {/* Details (collapsible) */}
         <div>
           <button
             type="button"
             onClick={() => setShowDetails(v => !v)}
-            className="w-full sf-control rounded-xl p-4 flex items-center justify-between text-sm text-gray-300"
+            className="w-full sf-panel rounded-xl px-4 py-4 flex items-center justify-between text-base text-gray-200 hover:bg-surface/80 transition-colors"
           >
-            <span>詳細資訊</span>
-            <span className="text-xs text-gray-500">{showDetails ? '收起' : '展開'}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">詳細資訊</span>
+              <span className="text-xs text-gray-500">{showDetails ? '收起' : '展開'}</span>
+            </div>
+            {showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
 
           {showDetails && (
             <div className="space-y-3 mt-3">
-              {/* Date */}
-              <div>
-                <h3 className="text-gray-400 text-sm mb-2 ml-1">日期</h3>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={e => setDate(e.target.value)}
-                  className="w-full sf-control rounded-xl p-4 text-white focus:outline-none"
-                />
-              </div>
-
               {/* Currency */}
               <div className="w-full sf-control rounded-xl p-4 flex items-center justify-between">
                 <span className="text-gray-400 text-sm">幣別</span>
@@ -291,15 +294,17 @@ const AddTransaction: React.FC = () => {
 
       {/* Fixed bottom save */}
       {!isNumPadOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 sf-topbar px-4 pt-3">
-          <button
-            onClick={handleSave}
-            className="w-full bg-primary text-white font-semibold py-4 rounded-2xl text-base shadow-lg active:scale-[0.99] transition-transform"
-          >
-            儲存
-          </button>
+        <div className="fixed bottom-0 left-0 right-0 z-30 sf-topbar pt-3">
+          <div className="px-4">
+            <button
+              onClick={handleSave}
+              className="w-full bg-primary text-white font-semibold py-4 rounded-2xl text-base shadow-lg active:scale-[0.99] transition-transform"
+            >
+              儲存
+            </button>
+          </div>
 
-          <div className="mt-3 sf-surface border-t sf-divider pt-2 pb-safe-bottom">
+          <div className="mt-3 sf-surface border-t sf-divider pt-2 pb-safe-bottom px-4">
             {(() => {
               const navItems = [
                 { icon: CircleDollarSign, label: '記帳', path: '/add' },
