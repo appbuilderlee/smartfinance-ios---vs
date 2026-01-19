@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronUp, ChevronDown, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { ChevronLeft, ChevronUp, ChevronDown, GripVertical, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { Icon } from '../components/Icon';
 import { TransactionType, Category } from '../types';
@@ -224,9 +224,18 @@ const CategoryManager: React.FC = () => {
                      </div>
                      <span className="text-white font-medium">{cat.name}</span>
                   </div>
-                  <div className="flex gap-3 text-gray-400 items-center">
+                  <div className="flex gap-2 text-gray-400 items-center">
                      {isReorderMode && (
                         <>
+                           <button
+                              onPointerDown={() => startLongPress(cat.id)}
+                              onPointerUp={clearDragTimer}
+                              onPointerLeave={clearDragTimer}
+                              className="text-gray-500 hover:text-gray-300 cursor-move"
+                              aria-label="Drag"
+                           >
+                              <GripVertical size={18} />
+                           </button>
                            <button
                               onClick={() => moveCategory(cat.id, -1)}
                               className="hover:text-primary"
