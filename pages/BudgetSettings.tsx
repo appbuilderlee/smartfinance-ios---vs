@@ -49,8 +49,15 @@ const BudgetSettings: React.FC = () => {
         {/* Category Sliders */}
         <div className="space-y-6">
           {categories.filter(c => c.type === 'EXPENSE').some(c => !budgets.find(b => b.categoryId === c.id)) && (
-            <div className="sf-panel p-3 text-xs text-gray-300">
-              偵測到新分類尚未同步到預算，請稍後或重新開啟本頁。
+            <div className="sf-panel p-3 text-xs text-gray-300 flex items-center justify-between gap-3">
+              <span>偵測到新分類尚未同步到預算，請稍後或點選重新整理。</span>
+              <button
+                type="button"
+                onClick={() => navigate(0)}
+                className="text-primary text-xs"
+              >
+                重新整理
+              </button>
             </div>
           )}
           {budgets.map((budget) => {

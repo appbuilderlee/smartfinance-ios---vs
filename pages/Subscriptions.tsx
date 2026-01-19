@@ -69,7 +69,7 @@ const Subscriptions: React.FC = () => {
 
          <div className="p-4 space-y-6">
             <div className="text-center mb-6">
-               <p className="text-gray-400 text-sm">每月總計 (估算，依週期換算)</p>
+               <p className="text-gray-400 text-sm">每月總計 (估算：每週×4、每2週×2、每年÷12)</p>
                <h1 className="text-4xl font-bold mt-1">{getCurrencySymbol(currency)} {Math.round(totalMonthly).toLocaleString()}</h1>
             </div>
 
