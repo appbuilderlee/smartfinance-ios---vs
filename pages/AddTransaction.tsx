@@ -304,40 +304,42 @@ const AddTransaction: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-3 sf-surface border-t sf-divider pt-2 pb-safe-bottom px-4">
-            {(() => {
-              const navItems = [
-                { icon: CircleDollarSign, label: '記帳', path: '/add' },
-                { icon: CalendarDays, label: '月曆', path: '/calendar' },
-                { icon: BarChart3, label: '統計', path: '/' },
-                { icon: List, label: '記錄', path: '/records' },
-                { icon: Settings, label: '設定', path: '/settings' },
-              ];
+          <div className="mt-3 sf-surface border-t sf-divider pt-2 pb-safe-bottom">
+            <div className="px-4">
+              {(() => {
+                const navItems = [
+                  { icon: CircleDollarSign, label: '記帳', path: '/add' },
+                  { icon: CalendarDays, label: '月曆', path: '/calendar' },
+                  { icon: BarChart3, label: '統計', path: '/' },
+                  { icon: List, label: '記錄', path: '/records' },
+                  { icon: Settings, label: '設定', path: '/settings' },
+                ];
 
-              return (
-                <div className="flex justify-between items-end max-w-md mx-auto">
-                  {navItems.map((item) => {
-                    const isActive = item.path === '/add';
-                    const IconComp = item.icon;
-                    return (
-                      <button
-                        key={item.path}
-                        onClick={() => {
-                          triggerHaptic(HapticPatterns.Light);
-                          navigate(item.path);
-                        }}
-                        className={`flex flex-col items-center gap-1 w-16 py-1 transition-colors active:scale-95 duration-200 ${
-                          isActive ? 'text-primary' : 'text-gray-500'
-                        }`}
-                      >
-                        <IconComp size={24} strokeWidth={isActive ? 2.5 : 2} />
-                        <span className="text-[10px]">{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })()}
+                return (
+                  <div className="flex justify-between items-end max-w-md mx-auto">
+                    {navItems.map((item) => {
+                      const isActive = item.path === '/add';
+                      const IconComp = item.icon;
+                      return (
+                        <button
+                          key={item.path}
+                          onClick={() => {
+                            triggerHaptic(HapticPatterns.Light);
+                            navigate(item.path);
+                          }}
+                          className={`flex flex-col items-center gap-1 w-16 py-1 transition-colors active:scale-95 duration-200 ${
+                            isActive ? 'text-primary' : 'text-gray-500'
+                          }`}
+                        >
+                          <IconComp size={24} strokeWidth={isActive ? 2.5 : 2} />
+                          <span className="text-[10px]">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}
