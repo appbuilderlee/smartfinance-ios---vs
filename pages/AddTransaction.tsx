@@ -160,12 +160,14 @@ const AddTransaction: React.FC = () => {
         {/* Date */}
         <div>
           <h3 className="text-gray-400 text-sm mb-2 ml-1">日期</h3>
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="w-full sf-control rounded-xl px-4 py-3 text-white focus:outline-none"
-          />
+          <div className="sf-control rounded-xl px-4 py-3">
+            <input
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="w-full bg-transparent text-white focus:outline-none"
+            />
+          </div>
         </div>
 
         {/* Details (collapsible) */}
