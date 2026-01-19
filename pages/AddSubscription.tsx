@@ -19,6 +19,8 @@ const SERVICE_ICON_PRESETS = [
   { label: '其他', value: '' },
 ];
 
+const EMOJI_PRESETS = ['🎬', '🎵', '▶️', '🧞', '🍎', '📺', '📦', '🤖', '🗄️', '💳', '📱', '🎮', '☁️', '📰', '🎁'];
+
 const AddSubscription: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +40,8 @@ const AddSubscription: React.FC = () => {
   const [fromPath] = useState(() => (location.state as any)?.from || window.history.state?.usr?.from || '');
   const [returnTo] = useState(() => (location.state as any)?.returnTo || '/subscriptions');
   const [icon, setIcon] = useState<string>('');
+  const [iconTab, setIconTab] = useState<'preset' | 'emoji'>('preset');
+  const [customEmoji, setCustomEmoji] = useState('');
 
   // Prefill when editing
   useEffect(() => {
@@ -54,6 +58,13 @@ const AddSubscription: React.FC = () => {
     setNotes(target.notes || '');
     setCategoryId(target.categoryId || '');
     setIcon(target.icon || '');
+    if (target.icon?.startsWith('emoji:')) {
+      setIconTab('emoji');
+      setCustomEmoji(target.icon.replace('emoji:', ''));
+    } else {
+      setIconTab('preset');
+      setCustomEmoji('');
+    }
   }, [isEdit, id, subscriptions]);
 
   // Default to first expense category for quick entry (add only)
@@ -250,22 +261,72 @@ const AddSubscription: React.FC = () => {
         {/* Icon preset */}
         <div>
           <label className="text-gray-400 text-xs ml-1 mb-2 block">服務圖示 (可選)</label>
-          <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
-            <select
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              className="bg-transparent text-white focus:outline-none w-full"
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setIconTab('preset')}
+              className={`flex-1 py-1.5 text-xs rounded-lg ${iconTab === 'preset' ? 'bg-primary text-white' : 'sf-control text-gray-400'}`}
             >
-              {SERVICE_ICON_PRESETS.map(opt => (
-                <option key={opt.value || opt.label} value={opt.value} className="bg-surface">
-                  {opt.label} {opt.value.startsWith('emoji:') ? opt.value.replace('emoji:', '') : ''}
-                </option>
-              ))}
-            </select>
-            <div className="w-4 h-4 bg-gray-500/50 rounded-sm flex items-center justify-center pointer-events-none">
-              <div className="w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-white"></div>
-            </div>
+              預設
+            </button>
+            <button
+              onClick={() => setIconTab('emoji')}
+              className={`flex-1 py-1.5 text-xs rounded-lg ${iconTab === 'emoji' ? 'bg-primary text-white' : 'sf-control text-gray-400'}`}
+            >
+              表情符號
+            </button>
           </div>
+          {iconTab === 'preset' ? (
+            <div className="sf-control rounded-xl px-4 py-3 flex justify-between items-center">
+              <select
+                value={icon}
+                onChange={(e) => setIcon(e.target.value)}
+                className="bg-transparent text-white focus:outline-none w-full"
+              >
+                {SERVICE_ICON_PRESETS.map(opt => (
+                  <option key={opt.value || opt.label} value={opt.value} className="bg-surface">
+                    {opt.label} {opt.value.startsWith('emoji:') ? opt.value.replace('emoji:', '') : ''}
+                  </option>
+                ))}
+              </select>
+              <div className="w-4 h-4 bg-gray-500/50 rounded-sm flex items-center justify-center pointer-events-none">
+                <div className="w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-white"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="sf-control rounded-xl px-3 py-2">
+                <input
+                  type="text"
+                  inputMode="text"
+                  value={customEmoji}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setCustomEmoji(value);
+                    const trimmed = value.trim();
+                    if (trimmed) {
+                      setIcon(`emoji:${trimmed}`);
+                    }
+                  }}
+                  placeholder="輸入表情符號"
+                  className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
+                {EMOJI_PRESETS.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      setCustomEmoji(emoji);
+                      setIcon(`emoji:${emoji}`);
+                    }}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${icon === `emoji:${emoji}` ? 'bg-primary' : 'sf-control'}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {icon && (
             <p className="text-xs text-primary mt-2">已選：{icon.startsWith('emoji:') ? icon.replace('emoji:', '') : icon}</p>
           )}

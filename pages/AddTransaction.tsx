@@ -33,6 +33,7 @@ const AddTransaction: React.FC = () => {
   const [tagInput, setTagInput] = useState('');
   const [transactionType, setTransactionType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [txCurrency, setTxCurrency] = useState<Currency>(currency);
+  const [showDetails, setShowDetails] = useState(false);
 
   const handleSave = () => {
     if (!amount || !selectedCategory) {
@@ -156,124 +157,133 @@ const AddTransaction: React.FC = () => {
           </div>
         </div>
 
-        {/* Note, Tags & Receipt */}
+        {/* Details (collapsible) */}
         <div>
-          <h3 className="text-gray-400 text-sm mb-2 ml-1">詳細資訊</h3>
-          <div className="space-y-3">
-            {/* Currency */}
-            <div className="w-full sf-control rounded-xl p-4 flex items-center justify-between">
-              <span className="text-gray-400 text-sm">幣別</span>
-              <select
-                value={txCurrency}
-                onChange={(e) => setTxCurrency(e.target.value as Currency)}
-                className="bg-transparent text-right text-gray-300 focus:outline-none cursor-pointer"
-              >
-                <option value="TWD">TWD (NT$)</option>
-                <option value="HKD">HKD (HK$)</option>
-                <option value="USD">USD ($)</option>
-                <option value="AUD">AUD (A$)</option>
-                <option value="CNY">RMB (¥)</option>
-                <option value="JPY">JPY (¥)</option>
-                <option value="EUR">EUR (€)</option>
-                <option value="GBP">GBP (£)</option>
-              </select>
-            </div>
+          <button
+            type="button"
+            onClick={() => setShowDetails(v => !v)}
+            className="w-full sf-control rounded-xl p-4 flex items-center justify-between text-sm text-gray-300"
+          >
+            <span>詳細資訊</span>
+            <span className="text-xs text-gray-500">{showDetails ? '收起' : '展開'}</span>
+          </button>
 
-            <input
-              type="text"
-              placeholder="輸入備註..."
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              className="w-full sf-control rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-            />
+          {showDetails && (
+            <div className="space-y-3 mt-3">
+              {/* Date */}
+              <div>
+                <h3 className="text-gray-400 text-sm mb-2 ml-1">日期</h3>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  className="w-full sf-control rounded-xl p-4 text-white focus:outline-none"
+                />
+              </div>
 
-            {/* Tags Input */}
-            <div className="w-full sf-control rounded-xl p-3 flex flex-wrap items-center gap-2 min-h-[56px]">
-              <Tag size={18} className="text-gray-500 mr-1" />
-                {tags.map(tag => (
-                  <span key={tag} className="bg-primary/15 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1 border border-primary/25">
-                    {tag}
-                    <button onClick={() => removeTag(tag)} className="hover:text-white"><X size={12} /></button>
-                  </span>
-                ))}
+              {/* Currency */}
+              <div className="w-full sf-control rounded-xl p-4 flex items-center justify-between">
+                <span className="text-gray-400 text-sm">幣別</span>
+                <select
+                  value={txCurrency}
+                  onChange={(e) => setTxCurrency(e.target.value as Currency)}
+                  className="bg-transparent text-right text-gray-300 focus:outline-none cursor-pointer"
+                >
+                  <option value="TWD">TWD (NT$)</option>
+                  <option value="HKD">HKD (HK$)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="AUD">AUD (A$)</option>
+                  <option value="CNY">RMB (¥)</option>
+                  <option value="JPY">JPY (¥)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                </select>
+              </div>
+
               <input
                 type="text"
-                placeholder={tags.length === 0 ? "新增標籤..." : ""}
-                value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') addTag(); }}
-                onBlur={addTag}
-                className="bg-transparent text-white text-sm focus:outline-none flex-1 min-w-[80px]"
+                placeholder="輸入備註..."
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                className="w-full sf-control rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
               />
-            </div>
 
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-            />
-
-            {!receiptPreview ? (
-              <button
-                onClick={triggerFileInput}
-                className="w-full sf-control rounded-xl p-4 flex items-center gap-3 transition-colors hover:bg-surface/80 active:bg-surface/60"
-              >
-                <div className="bg-gray-700 p-2 rounded-full">
-                  <Camera size={18} className="text-white" />
-                </div>
-                <span className="text-gray-400">拍攝收據或上傳照片</span>
-              </button>
-            ) : (
-              <div className="relative w-full sf-panel rounded-xl p-2">
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-black/50">
-                  <img src={receiptPreview} alt="Receipt Preview" className="w-full h-full object-contain" />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setReceiptPreview(null); }}
-                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <button onClick={triggerFileInput} className="w-full py-2 text-sm text-primary mt-1">
-                  更換照片
-                </button>
+              {/* Tags Input */}
+              <div className="w-full sf-control rounded-xl p-3 flex flex-wrap items-center gap-2 min-h-[56px]">
+                <Tag size={18} className="text-gray-500 mr-1" />
+                  {tags.map(tag => (
+                    <span key={tag} className="bg-primary/15 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1 border border-primary/25">
+                      {tag}
+                      <button onClick={() => removeTag(tag)} className="hover:text-white"><X size={12} /></button>
+                    </span>
+                  ))}
+                <input
+                  type="text"
+                  placeholder={tags.length === 0 ? "新增標籤..." : ""}
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addTag(); }}
+                  onBlur={addTag}
+                  className="bg-transparent text-white text-sm focus:outline-none flex-1 min-w-[80px]"
+                />
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Date & Recurrence */}
-        <div className="grid grid-cols-1 gap-3">
-          <div>
-            <h3 className="text-gray-400 text-sm mb-2 ml-1">日期</h3>
-            <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              className="w-full sf-control rounded-xl p-4 text-white focus:outline-none"
-            />
-          </div>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+              />
 
-          <div>
-            <h3 className="text-gray-400 text-sm mb-2 ml-1">週期</h3>
-            <div className="flex sf-control rounded-xl p-1">
-              {['無', '每週', '每2週', '每月'].map((label, idx) => {
-                const value = ['none', 'weekly', 'biweekly', 'monthly'][idx] as any;
-                return (
-                  <button
-                    key={value}
-                    onClick={() => setRecurrence(value)}
-                    className={`flex-1 py-2 rounded-lg text-sm transition-all duration-200 ${recurrence === value ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-gray-200'
-                      }`}
-                  >
-                    {label}
+              {!receiptPreview ? (
+                <button
+                  onClick={triggerFileInput}
+                  className="w-full sf-control rounded-xl p-4 flex items-center gap-3 transition-colors hover:bg-surface/80 active:bg-surface/60"
+                >
+                  <div className="bg-gray-700 p-2 rounded-full">
+                    <Camera size={18} className="text-white" />
+                  </div>
+                  <span className="text-gray-400">拍攝收據或上傳照片</span>
+                </button>
+              ) : (
+                <div className="relative w-full sf-panel rounded-xl p-2">
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-black/50">
+                    <img src={receiptPreview} alt="Receipt Preview" className="w-full h-full object-contain" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setReceiptPreview(null); }}
+                      className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <button onClick={triggerFileInput} className="w-full py-2 text-sm text-primary mt-1">
+                    更換照片
                   </button>
-                )
-              })}
+                </div>
+              )}
+
+              {/* Recurrence */}
+              <div>
+                <h3 className="text-gray-400 text-sm mb-2 ml-1">週期</h3>
+                <div className="flex sf-control rounded-xl p-1">
+                  {['無', '每週', '每2週', '每月'].map((label, idx) => {
+                    const value = ['none', 'weekly', 'biweekly', 'monthly'][idx] as any;
+                    return (
+                      <button
+                        key={value}
+                        onClick={() => setRecurrence(value)}
+                        className={`flex-1 py-2 rounded-lg text-sm transition-all duration-200 ${recurrence === value ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-gray-200'
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="h-44"></div> {/* Spacer for fixed bottom bar */}
@@ -281,7 +291,7 @@ const AddTransaction: React.FC = () => {
 
       {/* Fixed bottom save */}
       {!isNumPadOpen && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 sf-topbar px-4 pb-safe-bottom pt-3">
+        <div className="fixed bottom-0 left-0 right-0 z-30 sf-topbar px-4 pt-3">
           <button
             onClick={handleSave}
             className="w-full bg-primary text-white font-semibold py-4 rounded-2xl text-base shadow-lg active:scale-[0.99] transition-transform"
@@ -289,7 +299,7 @@ const AddTransaction: React.FC = () => {
             儲存
           </button>
 
-          <div className="mt-3 sf-surface border-t sf-divider pt-2">
+          <div className="mt-3 sf-surface border-t sf-divider pt-2 pb-safe-bottom">
             {(() => {
               const navItems = [
                 { icon: CircleDollarSign, label: '記帳', path: '/add' },
